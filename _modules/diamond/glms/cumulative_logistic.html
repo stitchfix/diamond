@@ -1,0 +1,348 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>diamond.glms.cumulative_logistic &mdash; Diamond  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="Diamond  documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Diamond
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../diamond.glms.html">GLMs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../diamond.solvers.html">Solvers</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Diamond</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>diamond.glms.cumulative_logistic</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for diamond.glms.cumulative_logistic</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">sparse</span>
+<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="k">import</span> <span class="n">expit</span>
+<span class="kn">from</span> <span class="nn">diamond.glms.glm</span> <span class="k">import</span> <span class="n">GLM</span>
+<span class="kn">from</span> <span class="nn">diamond.solvers.diamond_cumulative_logistic</span> <span class="k">import</span> <span class="n">FixedHessianSolverCumulative</span>
+
+<span class="n">LOGGER</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">LOGGER</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="CumulativeLogisticRegression"><a class="viewcode-back" href="../../../diamond.glms.html#diamond.glms.cumulative_logistic.CumulativeLogisticRegression">[docs]</a><span class="k">class</span> <span class="nc">CumulativeLogisticRegression</span><span class="p">(</span><span class="n">GLM</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Cumulative logistic regression model</span>
+<span class="sd">    with arbitrary crossed random effects and known covariances</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_df</span><span class="p">,</span> <span class="n">priors_df</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">test_df</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CumulativeLogisticRegression</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">train_df</span><span class="p">,</span> <span class="n">priors_df</span><span class="p">,</span> <span class="n">copy</span><span class="p">,</span> <span class="n">test_df</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solver</span> <span class="o">=</span> <span class="n">FixedHessianSolverCumulative</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">H_main</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">H_inter_LUs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">J</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">response</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># n x J matrix of response counts</span>
+
+<div class="viewcode-block" id="CumulativeLogisticRegression.initialize"><a class="viewcode-back" href="../../../diamond.glms.html#diamond.glms.cumulative_logistic.CumulativeLogisticRegression.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">formula</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot; Get ready to fit the model by parsing the formula, checking priors, and creating design, penalty, and Hessian matrices</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            formula (string): R-style formula expressing the model to fit. eg. :math:`y \sim 1 + x + (1 + x | group)`</span>
+<span class="sd">        Keyword Args:</span>
+<span class="sd">            kwargs: additional arguments to pass to solver.fit method</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CumulativeLogisticRegression</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">formula</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># ordinal uses separate solvers for main/interaction effects</span>
+        <span class="c1"># consequently, need to store main design matrix as its own object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">grouping_designs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;main&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CumulativeLogisticRegression.fit"><a class="viewcode-back" href="../../../diamond.glms.html#diamond.glms.cumulative_logistic.CumulativeLogisticRegression.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">formula</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot; Fit the model specified by formula and training data</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            formula (string): R-style formula expressing the model to fit. eg. :math:`y \sim 1 + x + (1 + x | group)`</span>
+<span class="sd">        Keyword Args:</span>
+<span class="sd">            intercepts : array-like, optional. Initial values for intercepts. \</span>
+<span class="sd">                Must be monotonically increasing and \</span>
+<span class="sd">                have length == number of response levels minus one</span>
+<span class="sd">            main : array-like, optional. Initial values for main effects. \</span>
+<span class="sd">                Must have length == number of main effects specified in formula</span>
+<span class="sd">            kwargs : additional arguments passed to solver.fit</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            dict of parameter estimates with keys &quot;intercepts&quot;, &quot;main&quot;, and one key for each grouping factor</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">formula</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># set initial parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">effects</span><span class="p">[</span><span class="s1">&#39;intercepts&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;intercepts&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">J</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">effects</span><span class="p">[</span><span class="s1">&#39;main&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;main&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_main</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">grouping_designs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">effects</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">grouping_designs</span><span class="p">[</span><span class="n">g</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">effects</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Y</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">response</span><span class="p">,</span>
+                                       <span class="n">main_design</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">main_design</span><span class="p">,</span>
+                                       <span class="n">inter_designs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">grouping_designs</span><span class="p">,</span>
+                                       <span class="n">H_inter_LUs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">H_inter_LUs</span><span class="p">,</span>
+                                       <span class="n">penalty_matrices</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sparse_inv_covs</span><span class="p">,</span>
+                                       <span class="n">effects</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">effects</span><span class="p">,</span>
+                                       <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_create_output_dict</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">results_dict</span></div>
+
+    <span class="k">def</span> <span class="nf">_create_response_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Creating response matrix.&quot;</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;index&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_df</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">response</span><span class="p">]})</span>
+        <span class="n">Y</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">pivot_table</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="s1">&#39;index&#39;</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">aggfunc</span><span class="o">=</span><span class="nb">len</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">as_matrix</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">response</span> <span class="o">=</span> <span class="n">Y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">J</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Created response matrix with shape (</span><span class="si">%d</span><span class="s2">, </span><span class="si">%d</span><span class="s2">)&quot;</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">_create_hessians</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Create bounds on the Hessian matrices</span>
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;creating Hessians&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grouping_designs</span><span class="p">[</span><span class="n">g</span><span class="p">]</span>
+            <span class="n">H</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">X</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">sparse_inv_covs</span><span class="p">[</span><span class="n">g</span><span class="p">]</span><span class="o">.</span><span class="n">sparse_matrix</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">H_inter_LUs</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">splu</span><span class="p">(</span><span class="n">H</span><span class="o">.</span><span class="n">tocsc</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">_create_output_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Extract coefficients from fitted model</span>
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            dictionary with keys &quot;main&quot;, &quot;intercepts&quot;, and one key for each grouping factor. \</span>
+<span class="sd">            Values of the dictionary are dataframes</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;extracting coefficients&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results_dict</span><span class="p">[</span><span class="s1">&#39;intercepts&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">effects</span><span class="p">[</span><span class="s1">&#39;intercepts&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results_dict</span><span class="p">[</span><span class="s1">&#39;main&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;variable&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">main_effects</span><span class="p">,</span>
+                                                  <span class="s1">&#39;main_value&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">effects</span><span class="p">[</span><span class="s1">&#39;main&#39;</span><span class="p">]})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_create_output_dict_inter</span><span class="p">()</span>
+
+<div class="viewcode-block" id="CumulativeLogisticRegression.predict"><a class="viewcode-back" href="../../../diamond.glms.html#diamond.glms.cumulative_logistic.CumulativeLogisticRegression.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_df</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Use the estimated model to make predictions. \</span>
+<span class="sd">        New levels of grouping factors are given fixed effects, with zero random effects</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            new_df (DataFrame):  data to make predictions on</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            n x J matrix, where n is the number of rows \</span>
+<span class="sd">            of new_df and J is the number \</span>
+<span class="sd">            of possible response values. The (i, j) entry of \</span>
+<span class="sd">           this matrix is the probability that observation i \</span>
+<span class="sd">            realizes response level j.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">eta</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">CumulativeLogisticRegression</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">new_df</span><span class="p">)</span>
+        <span class="n">intercepts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">effects</span><span class="p">[</span><span class="s1">&#39;intercepts&#39;</span><span class="p">]</span>
+        <span class="n">J</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">J</span>
+        <span class="n">preds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">eta</span><span class="p">),</span> <span class="n">J</span><span class="p">))</span>
+        <span class="n">preds</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">expit</span><span class="p">(</span><span class="n">intercepts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">eta</span><span class="p">)</span>
+        <span class="n">preds</span><span class="p">[:,</span> <span class="n">J</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">expit</span><span class="p">(</span><span class="n">intercepts</span><span class="p">[</span><span class="n">J</span> <span class="o">-</span> <span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">eta</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">J</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">preds</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">expit</span><span class="p">(</span><span class="n">intercepts</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+</span> <span class="n">eta</span><span class="p">)</span> <span class="o">-</span> <span class="n">expit</span><span class="p">(</span><span class="n">intercepts</span><span class="p">[</span><span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">eta</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">preds</span></div></div>
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Aaron Bradley, Tim Sweetser.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

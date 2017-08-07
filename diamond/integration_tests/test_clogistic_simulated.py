@@ -18,7 +18,7 @@ class TestCumulativeLogistic(unittest.TestCase):
         resources_exist = os.path.exists(simulated_data_loc) and os.path.exists(estimated_covariance_loc)
         if not resources_exist:
             logging.info("Simulating data and estimating covariances in R")
-            os.system("/usr/local/bin/Rscript %s/clogistic_generate_and_fit.R" % folder)
+            os.system("Rscript %s/clogistic_generate_and_fit.R" % folder)
         logging.info("Reading in training data and R::ordinal-estimated covariance matrix")
 
         df_train = pd.read_csv(simulated_data_loc)

@@ -1,0 +1,649 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>diamond.glms.glm &mdash; Diamond  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="Diamond  documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Diamond
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../diamond.glms.html">GLMs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../diamond.solvers.html">Solvers</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Diamond</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>diamond.glms.glm</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for diamond.glms.glm</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">abc</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">defaultdict</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">diamond.solvers.repeated_block_diag</span> <span class="k">import</span> <span class="n">RepeatedBlockDiagonal</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">sparse</span>
+
+<span class="n">LOGGER</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">LOGGER</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="GLM"><a class="viewcode-back" href="../../../diamond.glms.html#diamond.glms.glm.GLM">[docs]</a><span class="k">class</span> <span class="nc">GLM</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Binary or cumulative logistic regression model with arbitrary crossed random effects and known covariance</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">__metaclass__</span> <span class="o">=</span> <span class="n">abc</span><span class="o">.</span><span class="n">ABCMeta</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_df</span><span class="p">,</span> <span class="n">priors_df</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">test_df</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot; Initialize a diamond model</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            train_df (DataFrame): DataFrame to estimate the model parameters with</span>
+<span class="sd">            priors_df (DataFrame): Covariance matrix to use for regularization.</span>
+<span class="sd">                Format is | group | var1 | var2 | vcov |</span>
+<span class="sd">                where group represents the grouping factor, var1 and var2 specify the row and column of the covariance matrix,</span>
+<span class="sd">                and vcov is a scalar for that entry of the covariance matrix. Note that if var2 is NULL, vcov is</span>
+<span class="sd">                interpreted as the diagonal element of the covariance matrix for var1</span>
+<span class="sd">            copy (boolean): Make a copy of train_df. If False, new columns will be created and the index will be reset.</span>
+<span class="sd">            test_df (DataFrame): This is used to make predictions.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Object (GLM)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solver</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># solver will be set by child classes</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_df</span> <span class="o">=</span> <span class="n">train_df</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">if</span> <span class="n">copy</span> <span class="k">else</span> <span class="n">train_df</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">test_df</span> <span class="o">=</span> <span class="n">test_df</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">priors_df</span> <span class="o">=</span> <span class="n">priors_df</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">variances</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># set by self.parse_formula</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">response</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">main_effects</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">groupings</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">grouping_factors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">group_levels</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_levels</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_num_interactions</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_main</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1"># set by self.create_penalty_matrix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sparse_inv_covs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit_order</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># set by self.create_design_matrix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">level_maps</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">main_map</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inter_maps</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">main_design</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">grouping_designs</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># set by self.fit</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit_kwargs</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">effects</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obj_fun</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="GLM.initialize"><a class="viewcode-back" href="../../../diamond.glms.html#diamond.glms.glm.GLM.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">formula</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot; Get ready to fit the model by parsing the formula, checking priors, and creating design, penalty, and Hessian matrices</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            formula (string): R-style formula expressing the model to fit. eg. :math:`y \sim 1 + x + (1 + x | group)`</span>
+<span class="sd">        Keyword Args:</span>
+<span class="sd">            kwargs: additional arguments to pass to fit method</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit_kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parse_formula</span><span class="p">(</span><span class="n">formula</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_priors_df</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_create_design_matrix</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_create_response_matrix</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_create_penalty_matrix</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_create_hessians</span><span class="p">()</span></div>
+
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_create_response_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Must be implemented by subclasses &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_create_hessians</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Must be implemented by subclasses &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+<div class="viewcode-block" id="GLM.fit"><a class="viewcode-back" href="../../../diamond.glms.html#diamond.glms.glm.GLM.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">formula</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Must be implemented by subclasses &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_create_output_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Must be implemented by subclasses &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="k">def</span> <span class="nf">_check_priors_df</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Run simple validations on priors data frame</span>
+
+<span class="sd">        This method runs a number of sanity checks on the priors data frame:</span>
+<span class="sd">            - ensure that the expected columns are present</span>
+<span class="sd">            - ensure that all rows in priors_df are consistent with the formula</span>
+<span class="sd">            - ensure that all random effect variables at least have a variance</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">_groupings</span> <span class="o">=</span> <span class="p">{</span><span class="n">g</span><span class="p">:</span> <span class="n">f</span> <span class="o">+</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">]</span> <span class="k">for</span> <span class="n">g</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()}</span>
+
+        <span class="n">allowed_covs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">g</span><span class="p">:</span> <span class="p">[[</span><span class="n">v</span><span class="p">,</span> <span class="n">w</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">j</span> <span class="o">&gt;</span> <span class="n">i</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">float</span><span class="p">)]</span>
+            <span class="k">for</span> <span class="n">g</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">_groupings</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()</span>
+            <span class="p">}</span>
+
+        <span class="n">required_covs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">g</span><span class="p">:</span> <span class="p">[[</span><span class="n">v</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">float</span><span class="p">)]</span>
+            <span class="k">for</span> <span class="n">g</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">_groupings</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()</span>
+            <span class="p">}</span>
+
+        <span class="n">example_priors_data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;group&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">g</span> <span class="k">for</span> <span class="n">g</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">allowed_covs</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">f</span><span class="p">],</span>
+            <span class="s2">&quot;var1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">j</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">allowed_covs</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">f</span><span class="p">],</span>
+            <span class="s2">&quot;var2&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">j</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">allowed_covs</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">f</span><span class="p">],</span>
+            <span class="s2">&quot;vcov&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.1</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">allowed_covs</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">f</span><span class="p">]</span>
+        <span class="p">}</span>
+        <span class="n">example_priors_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">example_priors_data</span><span class="p">)</span>
+
+        <span class="n">expected_cols</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="s2">&quot;group&quot;</span><span class="p">,</span> <span class="s2">&quot;var1&quot;</span><span class="p">,</span> <span class="s2">&quot;var2&quot;</span><span class="p">,</span> <span class="s2">&quot;vcov&quot;</span><span class="p">])</span>
+        <span class="n">actual_cols</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">priors_df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">expected_cols</span> <span class="o">-</span> <span class="n">actual_cols</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">                priors_df is expected to have the following columns:</span>
+<span class="s2">                | group | var1 | var2 | vcov |</span>
+<span class="s2">            &quot;&quot;&quot;</span><span class="p">)</span>
+
+        <span class="c1"># check that all rows in self.priors_df are valid</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">priors_df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">group</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">group</span>
+            <span class="n">var1</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">var1</span>
+            <span class="n">var2</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">var2</span>
+
+            <span class="c1"># we need to standardize nan values</span>
+            <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">var2</span><span class="p">)</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;nan&#39;</span><span class="p">,</span> <span class="s1">&#39;None&#39;</span><span class="p">,</span> <span class="s1">&#39;null&#39;</span><span class="p">]:</span>
+                <span class="n">var2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+            <span class="n">var_pair</span> <span class="o">=</span> <span class="p">[</span><span class="n">var1</span><span class="p">,</span> <span class="n">var2</span><span class="p">]</span>
+
+            <span class="n">num_matches</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">var_pair</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">allowed_covs</span><span class="p">[</span><span class="n">group</span><span class="p">]])</span>
+            <span class="k">if</span> <span class="n">num_matches</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;There is a row in your priors_df which is not expected.</span>
+<span class="s2">                Unexpected row: </span><span class="si">{}</span><span class="s2"></span>
+<span class="s2">                A valid priors_df looks something like:</span>
+<span class="s2">                </span><span class="si">{}</span><span class="s2"></span>
+
+<span class="s2">                &quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">([</span><span class="n">group</span><span class="p">]</span> <span class="o">+</span> <span class="n">var_pair</span><span class="p">,</span> <span class="n">example_priors_df</span><span class="p">))</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">required_covs</span><span class="p">[</span><span class="n">group</span><span class="p">]</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">var_pair</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="c1"># thrown when var_pair not in required_covs[group]</span>
+                <span class="k">pass</span>
+
+        <span class="c1"># loop through the required_covs and make sure none are remaining</span>
+        <span class="n">remaining_required_covs</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">required_covs</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()])</span>
+        <span class="k">if</span> <span class="n">remaining_required_covs</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;Priors_df is missing some required rows.</span>
+<span class="s2">            If you want an unregularized random effect, include it as a fixed</span>
+<span class="s2">            effect instead.</span>
+
+<span class="s2">            The missing rows are: </span><span class="si">{}</span><span class="s2"></span>
+
+<span class="s2">            &quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">required_covs</span><span class="p">))</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_check_formula</span><span class="p">(</span><span class="n">formula</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check that the formula contains all necessary ingredients, such as a response and at least one group</span>
+<span class="sd">        Args:</span>
+<span class="sd">            formula (string): R-style formula expressing the model to fit. eg. &quot;y ~ 1 + x + (1 + x | group)&quot;</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">valid_formula_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        A valid formula looks like:</span>
+<span class="s2">            response ~ 1 + feature1 + feature2 + ... + (1 + feature1 + feature2 + ... | doctor_id)</span>
+<span class="s2">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="s2">&quot;~&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">formula</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;Formula missing &#39;~&#39;. You need a response. </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">valid_formula_str</span><span class="p">))</span>
+        <span class="k">if</span> <span class="s2">&quot;|&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">formula</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="s2">&quot;Formula missing &#39;|&#39;. You need at least 1 group. </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">valid_formula_str</span><span class="p">))</span>
+
+
+    <span class="k">def</span> <span class="nf">_parse_formula</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">formula</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            formula (string): R-style formula expressing the model to fit. eg. &quot;y ~ 1 + x + (1 + x | group)&quot;</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># strip all newlines, tabs, and spaces</span>
+        <span class="n">formula</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;[\n\t ]&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">formula</span><span class="p">)</span>
+
+        <span class="c1"># split the response from the formula terms</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">response</span> <span class="o">=</span> <span class="n">formula</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;~&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">terms</span> <span class="o">=</span> <span class="n">formula</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;~&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">:][</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">interactions</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\(([A-Za-z0-9_|\+]+)\)&#39;</span><span class="p">,</span> <span class="n">terms</span><span class="p">)</span>
+        <span class="c1"># parse the interactions. these are terms like (1|doctor_id)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">interactions</span><span class="p">:</span>
+            <span class="c1"># remove interactions from terms list</span>
+            <span class="n">terms</span> <span class="o">=</span> <span class="n">terms</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;(</span><span class="si">%s</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="n">i</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="n">i_terms</span> <span class="o">=</span> <span class="n">i</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;|&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">i_group</span> <span class="o">=</span> <span class="n">i</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;|&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">:][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i_term</span> <span class="ow">in</span> <span class="n">i_terms</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;+&quot;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">i_term</span> <span class="o">==</span> <span class="s2">&quot;1&quot;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="p">[</span><span class="n">i_group</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;intercept&quot;</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">i_term</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="p">[</span><span class="n">i_group</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i_term</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">group_levels</span><span class="p">[</span><span class="n">i_group</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_df</span><span class="p">[</span><span class="n">i_group</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">grouping_factors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i_group</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">grouping_factors</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">num_levels</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_df</span><span class="p">[</span><span class="n">g</span><span class="p">]</span><span class="o">.</span><span class="n">nunique</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">total_num_interactions</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_levels</span><span class="p">[</span><span class="n">g</span><span class="p">]</span>
+        <span class="c1"># parse the main terms</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">terms</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;+&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">m</span> <span class="o">==</span> <span class="s2">&quot;1&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">main_effects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;intercept&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">m</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">main_effects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_main</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">main_effects</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_create_penalty_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Take the provided covariance matrices and transform it into an L2 penalty matrix</span>
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">variances</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">priors_df</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="o">.</span><span class="n">ix</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="p">[</span><span class="s1">&#39;var1&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;(Intercept)&#39;</span><span class="p">,</span> <span class="s1">&#39;var1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;intercept&#39;</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;creating covariance matrix&quot;</span><span class="p">)</span>
+
+        <span class="c1"># if &quot;group&quot; is a column in the variances, rename it to &quot;grp&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;grp&#39;</span><span class="p">:</span> <span class="s1">&#39;group&#39;</span><span class="p">},</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">inv_covs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="p">[</span><span class="n">g</span><span class="p">])</span>
+            <span class="n">cov_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+            <span class="n">var_grp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">variances</span><span class="o">.</span><span class="n">group</span> <span class="o">==</span> <span class="n">g</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">var_grp</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># if no priors, then leave cov_mat as zeros</span>
+                <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">var_grp</span><span class="p">[[</span><span class="s1">&#39;var1&#39;</span><span class="p">,</span> <span class="s1">&#39;var2&#39;</span><span class="p">,</span> <span class="s1">&#39;vcov&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;var2&#39;</span><span class="p">])</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;nan&#39;</span><span class="p">,</span> <span class="s1">&#39;None&#39;</span><span class="p">,</span> <span class="s1">&#39;null&#39;</span><span class="p">]:</span>
+                        <span class="n">i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="p">[</span><span class="n">g</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;var1&#39;</span><span class="p">])</span>
+                        <span class="n">cov_mat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;vcov&#39;</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="p">[</span><span class="n">g</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;var1&#39;</span><span class="p">])</span>
+                        <span class="n">j</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="p">[</span><span class="n">g</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;var2&#39;</span><span class="p">])</span>
+                        <span class="n">cov_mat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;vcov&#39;</span><span class="p">]</span>
+                        <span class="n">cov_mat</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;vcov&#39;</span><span class="p">]</span>
+                <span class="n">inv_covs</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">cov_mat</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sparse_inv_covs</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">=</span> <span class="n">RepeatedBlockDiagonal</span><span class="p">(</span><span class="n">inv_covs</span><span class="p">[</span><span class="n">g</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_levels</span><span class="p">[</span><span class="n">g</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sparse_inv_covs</span><span class="p">[</span><span class="s1">&#39;main&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">_create_main_design</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create design matrix for main effects</span>
+<span class="sd">        Keyword Args:</span>
+<span class="sd">            * *df* (``DataFrame``). specify a new dataframe to create design matrix from</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            array_like: design matrix in sparse CSR format</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;df&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_df</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;row_index&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;intercept&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>  <span class="c1"># assume intercept is always included</span>
+        <span class="c1"># although having this extra column doesn&#39;t hurt if intercept is not included</span>
+
+        <span class="n">id_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;row_index&#39;</span><span class="p">]</span>
+
+        <span class="n">melted_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">melt</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">id_cols</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">main_effects</span><span class="p">],</span> <span class="n">id_cols</span><span class="p">)</span>
+        <span class="n">melted_df</span> <span class="o">=</span> <span class="n">melted_df</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">main_map</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s1">&#39;variable&#39;</span><span class="p">)</span>
+        <span class="n">melted_df</span><span class="p">[</span><span class="s1">&#39;col_index&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">melted_df</span><span class="p">[</span><span class="s1">&#39;main_idx&#39;</span><span class="p">]</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="n">melted_df</span><span class="o">.</span><span class="n">row_index</span>
+        <span class="n">col</span> <span class="o">=</span> <span class="n">melted_df</span><span class="o">.</span><span class="n">col_index</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">melted_df</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">return</span> <span class="n">sparse</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">((</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)),</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_create_inter_design</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create random effects design matrix for grouping factor g</span>
+<span class="sd">        This is straightforward when you create the matrix using the training DataFrame</span>
+<span class="sd">        But a new DataFrame can have new levels of g which did not exist in training DF</span>
+<span class="sd">        For these levels, the random coefficients are set to zero</span>
+<span class="sd">        But as a practical matter, it&#39;s easier to zero out the values of the predictors</span>
+<span class="sd">        here than it is to modify the fitted coefficient vector</span>
+<span class="sd">        Args:</span>
+<span class="sd">            g (string): grouping factor to create design matrix</span>
+<span class="sd">        Keyword Args:</span>
+<span class="sd">            * *df* (``DataFrame``). specify a new dataframe to create design matrix from</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            array_like : design matrix in sparse CSR format</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">g</span> <span class="o">+</span> <span class="s1">&#39;_idx&#39;</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;df&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_df</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;row_index&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span>
+        <span class="k">if</span> <span class="s1">&#39;intercept&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="p">[</span><span class="n">g</span><span class="p">]:</span>
+            <span class="n">df</span><span class="p">[</span><span class="s1">&#39;intercept&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+        <span class="n">id_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">g</span><span class="p">,</span> <span class="s1">&#39;row_index&#39;</span><span class="p">]</span>
+
+        <span class="n">melted_inter</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">melt</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">id_cols</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="p">[</span><span class="n">g</span><span class="p">]],</span> <span class="n">id_cols</span><span class="p">)</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">level_maps</span><span class="p">[</span><span class="n">g</span><span class="p">],</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="n">g</span><span class="p">)</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span>  <span class="c1"># level_maps has levels of g and an index for each level</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inter_maps</span><span class="p">[</span><span class="n">g</span><span class="p">],</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;inner&#39;</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s1">&#39;variable&#39;</span><span class="p">)</span>
+        <span class="c1"># inter_maps has variables in formula for this grouping factor, plus indexes</span>
+        <span class="c1"># because of the above left join, some idx values are NULL</span>
+        <span class="c1"># but we need to keep the row indexes</span>
+        <span class="n">nrows</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">melted_inter</span><span class="o">.</span><span class="n">row_index</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="n">L</span>
+        <span class="c1"># now drop the null column index</span>
+        <span class="n">melted_inter</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">melted_inter</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="n">g</span><span class="p">,</span> <span class="n">idx</span><span class="p">],</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">melted_inter</span><span class="p">[</span><span class="s1">&#39;col_index&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">melted_inter</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="p">[</span><span class="n">g</span><span class="p">])</span> <span class="o">+</span> <span class="n">melted_inter</span><span class="p">[</span><span class="s1">&#39;inter_idx&#39;</span><span class="p">]</span>
+
+        <span class="n">row</span> <span class="o">=</span> <span class="n">melted_inter</span><span class="o">.</span><span class="n">row_index</span>
+        <span class="n">col</span> <span class="o">=</span> <span class="n">melted_inter</span><span class="o">.</span><span class="n">col_index</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">melted_inter</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="k">if</span> <span class="n">g</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">grouping_designs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="c1"># this means training matrix was already created for this group</span>
+            <span class="c1"># reuse the same shape: indices are lined up, everything else will be 0 b/c of sparse matrix</span>
+            <span class="n">ncols</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grouping_designs</span><span class="p">[</span><span class="n">g</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ncols</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="n">L</span>
+
+        <span class="k">return</span> <span class="n">sparse</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">((</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">)),</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">nrows</span><span class="p">,</span> <span class="n">ncols</span><span class="p">))</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_create_design_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create row index and dummy intercept column</span>
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_df</span><span class="p">[</span><span class="s1">&#39;row_index&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_df</span><span class="o">.</span><span class="n">index</span>
+
+        <span class="c1"># Create some dataframes to help with indexing</span>
+        <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">g</span> <span class="o">+</span> <span class="s1">&#39;_idx&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">level_maps</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="n">g</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train_df</span><span class="p">[</span><span class="n">g</span><span class="p">]),</span>
+                                               <span class="n">idx</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_levels</span><span class="p">[</span><span class="n">g</span><span class="p">])})</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inter_maps</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;variable&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="p">[</span><span class="n">g</span><span class="p">],</span>
+                                               <span class="s1">&#39;inter_idx&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="p">[</span><span class="n">g</span><span class="p">]))})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">main_map</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;variable&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">main_effects</span><span class="p">,</span>
+                                      <span class="s1">&#39;main_idx&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">main_effects</span><span class="p">))})</span>
+
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;creating main design matrix&quot;</span><span class="p">)</span>
+        <span class="c1"># Compute indices (row_index, col_index) into sparse design matrix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">main_design</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_main_design</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;creating </span><span class="si">%s</span><span class="s2"> design matrix&quot;</span><span class="p">,</span> <span class="n">g</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">grouping_designs</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_inter_design</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">grouping_designs</span><span class="p">[</span><span class="s1">&#39;main&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">main_design</span>
+
+    <span class="k">def</span> <span class="nf">_create_output_dict_inter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Format the estimated coefficients into a nice dictionary</span>
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">groupings_coefs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">coefs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;inter_value&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">effects</span><span class="p">[</span><span class="n">g</span><span class="p">]})</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">g</span> <span class="o">+</span> <span class="s1">&#39;_idx&#39;</span>
+            <span class="n">coefs</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">coefs</span><span class="p">))</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="p">[</span><span class="n">g</span><span class="p">])</span>
+            <span class="n">coefs</span><span class="p">[</span><span class="s1">&#39;inter_idx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">coefs</span><span class="p">)),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="p">[</span><span class="n">g</span><span class="p">]))</span>
+            <span class="n">coefs</span> <span class="o">=</span> <span class="n">coefs</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inter_maps</span><span class="p">[</span><span class="n">g</span><span class="p">],</span> <span class="n">on</span><span class="o">=</span><span class="s1">&#39;inter_idx&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">level_maps</span><span class="p">[</span><span class="n">g</span><span class="p">],</span> <span class="n">on</span><span class="o">=</span><span class="n">idx</span><span class="p">)</span>
+            <span class="n">groupings_coefs</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">=</span> <span class="n">coefs</span>
+            <span class="c1"># make the individual entries in self.results_dict</span>
+            <span class="n">_df</span> <span class="o">=</span> <span class="n">coefs</span><span class="o">.</span><span class="n">pivot</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">g</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="s1">&#39;variable&#39;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="s1">&#39;inter_value&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+            <span class="k">del</span> <span class="n">_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span>
+            <span class="n">_df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">results_dict</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">=</span> <span class="n">_df</span>
+
+<div class="viewcode-block" id="GLM.predict"><a class="viewcode-back" href="../../../diamond.glms.html#diamond.glms.glm.GLM.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_df</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot; Obtain predictions from a fitted diamond object. New levels of grouping factors are given fixed effects, with zero random effects</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            new_df (DataFrame):  data to make predictions on</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            array_like: predictions, whose length is equal to the \</span>
+<span class="sd">            number of rows of the supplied DataFrame</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_main</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_main_design</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">new_df</span><span class="p">)</span>
+            <span class="n">predictions</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">effects</span><span class="p">[</span><span class="s1">&#39;main&#39;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">predictions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">new_df</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">Z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_inter_design</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">df</span><span class="o">=</span><span class="n">new_df</span><span class="p">)</span>
+            <span class="n">predictions</span> <span class="o">+=</span> <span class="n">Z</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">effects</span><span class="p">[</span><span class="n">g</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">predictions</span></div></div>
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Aaron Bradley, Tim Sweetser.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

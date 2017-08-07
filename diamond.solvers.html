@@ -1,0 +1,609 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Solvers &mdash; Diamond  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="Diamond  documentation" href="index.html"/>
+        <link rel="prev" title="GLMs" href="diamond.glms.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Diamond
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="diamond.glms.html">GLMs</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Solvers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-diamond.solvers.diamond_logistic">diamond_logistic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-diamond.solvers.diamond_cumulative_logistic">diamond_cumulative_logistic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-diamond.solvers.repeated_block_diag">repeated_block_diag</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-diamond.solvers.repeated_block_dot">repeated_block_dot</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-diamond.solvers.utils">utils</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Diamond</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Solvers</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/diamond.solvers.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="solvers">
+<h1>Solvers<a class="headerlink" href="#solvers" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-diamond.solvers.diamond_logistic">
+<span id="diamond-logistic"></span><h2>diamond_logistic<a class="headerlink" href="#module-diamond.solvers.diamond_logistic" title="Permalink to this headline">¶</a></h2>
+<p>Diamond solver for logistic regression</p>
+<dl class="class">
+<dt id="diamond.solvers.diamond_logistic.FixedHessianSolverMulti">
+<em class="property">class </em><code class="descclassname">diamond.solvers.diamond_logistic.</code><code class="descname">FixedHessianSolverMulti</code><a class="reference internal" href="_modules/diamond/solvers/diamond_logistic.html#FixedHessianSolverMulti"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.solvers.diamond_logistic.FixedHessianSolverMulti" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>This class wraps the fit method</p>
+<dl class="staticmethod">
+<dt id="diamond.solvers.diamond_logistic.FixedHessianSolverMulti.fit">
+<em class="property">static </em><code class="descname">fit</code><span class="sig-paren">(</span><em>Y</em>, <em>designs</em>, <em>H_invs</em>, <em>sparse_inv_covs</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/solvers/diamond_logistic.html#FixedHessianSolverMulti.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.solvers.diamond_logistic.FixedHessianSolverMulti.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit the model. Outer iterations loop over main effects and each grouping factor</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Y</strong> &#8211; array_like. Vector of binary responses in {0, 1}</li>
+<li><strong>designs</strong> &#8211; dict. Design matrices for main effects and grouping factors</li>
+<li><strong>H_invs</strong> &#8211; dict. dictionary of inverse Hessian matrix for each grouping factor</li>
+<li><strong>sparse_inv_covs</strong> &#8211; dict. dictionary of sparse regularization matrices,            one for each grouping factor</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Keyword Arguments:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body"><ul class="first simple">
+<li><strong>min_its</strong> &#8211; int. Minimum number of outer iterations</li>
+<li><strong>max_its</strong> &#8211; int. Maximum number of outer iterations</li>
+<li><strong>tol</strong> &#8211; float. If parameters change by less than <cite>tol</cite>, convergence has been achieved.</li>
+<li><strong>inner_tol</strong> &#8211; float. Tolerance for inner loops</li>
+<li><strong>initial_offset</strong> &#8211; array_like. Offset vector. Defaults to 0</li>
+<li><strong>fit_order</strong> &#8211; list. Order in which to fit main and random effects</li>
+<li><strong>permute_fit_order</strong> &#8211; boolean. Change the fit order at each iteration</li>
+<li><strong>verbose</strong> &#8211; boolean. Display updates at every iteration</li>
+</ul>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">estimated intercepts, main effects, and random effects</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">dict</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-diamond.solvers.diamond_cumulative_logistic">
+<span id="diamond-cumulative-logistic"></span><h2>diamond_cumulative_logistic<a class="headerlink" href="#module-diamond.solvers.diamond_cumulative_logistic" title="Permalink to this headline">¶</a></h2>
+<p>Diamond solver for cumulative logistic regression</p>
+<dl class="class">
+<dt id="diamond.solvers.diamond_cumulative_logistic.FixedHessianSolverCumulative">
+<em class="property">class </em><code class="descclassname">diamond.solvers.diamond_cumulative_logistic.</code><code class="descname">FixedHessianSolverCumulative</code><a class="reference internal" href="_modules/diamond/solvers/diamond_cumulative_logistic.html#FixedHessianSolverCumulative"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.solvers.diamond_cumulative_logistic.FixedHessianSolverCumulative" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>This class wraps the fit method</p>
+<dl class="staticmethod">
+<dt id="diamond.solvers.diamond_cumulative_logistic.FixedHessianSolverCumulative.fit">
+<em class="property">static </em><code class="descname">fit</code><span class="sig-paren">(</span><em>Y</em>, <em>main_design</em>, <em>inter_designs</em>, <em>H_inter_LUs</em>, <em>penalty_matrices</em>, <em>effects</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/solvers/diamond_cumulative_logistic.html#FixedHessianSolverCumulative.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.solvers.diamond_cumulative_logistic.FixedHessianSolverCumulative.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit the model. Outer iterations loop over intercepts,             main effects, and each grouping factor</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>Y</strong> &#8211; array_like. Response matrix.</li>
+<li><strong>main_design</strong> &#8211; array_like. Design matrix for main effects</li>
+<li><strong>inter_designs</strong> &#8211; dict of array_like: design matrices for random effects</li>
+<li><strong>H_inter_LUs</strong> &#8211; dict of LU-decompositions of approximate Hessian matrices,            one for each grouping factor</li>
+<li><strong>penalty_matrices</strong> &#8211; dict of sparse matrices for regularization</li>
+<li><strong>effects</strong> &#8211; dict. Current value of parameter estimates</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Keyword Arguments:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body"><ul class="first simple">
+<li><strong>min_its</strong> &#8211; int. Minimum number of outer iterations</li>
+<li><strong>max_its</strong> &#8211; int. Maximum number of outer iterations</li>
+<li><strong>tol</strong> &#8211; float. If parameters change by less than <cite>tol</cite>, convergence has been achieved.</li>
+<li><strong>inner_tol</strong> &#8211; float. Tolerance for inner loops</li>
+<li><strong>offset</strong> &#8211; array_like. Offset vector. Defaults to 0</li>
+<li><strong>verbose</strong> &#8211; boolean. Display updates at every iteration</li>
+</ul>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">dict of estimated intercepts, main effects, and random effects</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-diamond.solvers.repeated_block_diag">
+<span id="repeated-block-diag"></span><h2>repeated_block_diag<a class="headerlink" href="#module-diamond.solvers.repeated_block_diag" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="diamond.solvers.repeated_block_diag.RepeatedBlockDiagonal">
+<em class="property">class </em><code class="descclassname">diamond.solvers.repeated_block_diag.</code><code class="descname">RepeatedBlockDiagonal</code><span class="sig-paren">(</span><em>block</em>, <em>num_blocks</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/solvers/repeated_block_diag.html#RepeatedBlockDiagonal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.solvers.repeated_block_diag.RepeatedBlockDiagonal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="method">
+<dt id="diamond.solvers.repeated_block_diag.RepeatedBlockDiagonal.dot">
+<code class="descname">dot</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/solvers/repeated_block_diag.html#RepeatedBlockDiagonal.dot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.solvers.repeated_block_diag.RepeatedBlockDiagonal.dot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform dot product between RepeatedBlockDiagonal objects</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>x</strong> &#8211; RepeatedBlockDiagonal.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">repeated_block_dot with dot product of the 2 matrices</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="diamond.solvers.repeated_block_diag.RepeatedBlockDiagonal.sparse_matrix">
+<code class="descname">sparse_matrix</code><a class="headerlink" href="#diamond.solvers.repeated_block_diag.RepeatedBlockDiagonal.sparse_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a block diagonal sparse matrix, with a single repeated block</p>
+<p>This method essentially replicates the functionality of scipy.linalg.block_diag.
+We rewrote it for this special case to improve the memory footprint - scipy&#8217;s version
+is general purpose, allowing different blocks along the diagonal. The implementation of
+it is too memory intensive and quickly causes OOM errors with resonably sized
+design matrices. In our case, we only have one block we are replicating along the
+diagonal, so we don&#8217;t need to iteratively build up the overall block diagonal matrix.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">csr block diagonal matrix</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="diamond.solvers.repeated_block_diag.test_repeated_block">
+<code class="descclassname">diamond.solvers.repeated_block_diag.</code><code class="descname">test_repeated_block</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/solvers/repeated_block_diag.html#test_repeated_block"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.solvers.repeated_block_diag.test_repeated_block" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-diamond.solvers.repeated_block_dot">
+<span id="repeated-block-dot"></span><h2>repeated_block_dot<a class="headerlink" href="#module-diamond.solvers.repeated_block_dot" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="diamond.solvers.repeated_block_dot.repeated_block_dot">
+<code class="descclassname">diamond.solvers.repeated_block_dot.</code><code class="descname">repeated_block_dot</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#diamond.solvers.repeated_block_dot.repeated_block_dot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-diamond.solvers.utils">
+<span id="utils"></span><h2>utils<a class="headerlink" href="#module-diamond.solvers.utils" title="Permalink to this headline">¶</a></h2>
+<p>Helper functions for diamond solvers.
+Mostly linear algebra/gradients/Hessians.
+Includes logistic and cumulative logistic functions</p>
+<dl class="function">
+<dt id="diamond.solvers.utils.custom_block_diag">
+<code class="descclassname">diamond.solvers.utils.</code><code class="descname">custom_block_diag</code><span class="sig-paren">(</span><em>blocks</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/solvers/utils.html#custom_block_diag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.solvers.utils.custom_block_diag" title="Permalink to this definition">¶</a></dt>
+<dd><p>create csr sparse block diagonal matrix from identically-sized blocks</p>
+<p>Blocks don&#8217;t need to be identical, but they do need to be the same shape.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="diamond.solvers.utils.dot">
+<code class="descclassname">diamond.solvers.utils.</code><code class="descname">dot</code><span class="sig-paren">(</span><em>x</em>, <em>y</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/solvers/utils.html#dot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.solvers.utils.dot" title="Permalink to this definition">¶</a></dt>
+<dd><p>A generic dot product for sparse and dense vectors</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x</strong> &#8211; array_like, possibly sparse</li>
+<li><strong>y</strong> &#8211; array_like, possibly sparse</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">dot product of x and y</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="diamond.solvers.utils.l2_clogistic_fixef">
+<code class="descclassname">diamond.solvers.utils.</code><code class="descname">l2_clogistic_fixef</code><span class="sig-paren">(</span><em>X</em>, <em>Y</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/solvers/utils.html#l2_clogistic_fixef"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.solvers.utils.l2_clogistic_fixef" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a true, second-order Newton step for fixed effects</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>X</strong> &#8211; array_like. design matrix</li>
+<li><strong>Y</strong> &#8211; array_like. response matrix</li>
+<li><strong>alpha</strong> &#8211; array_like. intercepts.        must have shape == one less than the number of columns of <cite>Y</cite></li>
+<li><strong>beta</strong> &#8211; array_like. parameters.         must have shape == number of columns of X</li>
+<li><strong>min_its</strong> &#8211; int, optional. Minimum number of iterations</li>
+<li><strong>max_its</strong> &#8211; int, optional. Maximum number of iterations</li>
+<li><strong>tol</strong> &#8211; float, optional. Convergence tolerance on relative change in <cite>alpha</cite> and <cite>beta</cite></li>
+<li><strong>penalty_matrix</strong> &#8211; array_like, optional.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Updated intercepts, updated main effects, both array-like</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="diamond.solvers.utils.l2_clogistic_gradient">
+<code class="descclassname">diamond.solvers.utils.</code><code class="descname">l2_clogistic_gradient</code><span class="sig-paren">(</span><em>X</em>, <em>Y</em>, <em>intercept=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/solvers/utils.html#l2_clogistic_gradient"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.solvers.utils.l2_clogistic_gradient" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gradient of cumulative logit model</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>X</strong> &#8211; array_like. design matrix</li>
+<li><strong>Y</strong> &#8211; array_like. response matrix</li>
+<li><strong>intercept</strong> &#8211; boolean. If intercept=False, just calculate the gradient for the coefficients</li>
+<li><strong>offset</strong> &#8211; array_like, optional. Defaults to 0</li>
+<li><strong>alpha</strong> &#8211; array_like, optional. intercepts.        must have shape == one less than the number of columns of <cite>Y</cite></li>
+<li><strong>beta</strong> &#8211; array_like, optional. parameters.        must have shape == number of columns of X</li>
+<li><strong>penalty_matrix</strong> &#8211; array_like, optional. Regularization matrix</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">dense array of the GRADIENT of the NEGATIVE, penalized loglikelihood function</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="diamond.solvers.utils.l2_clogistic_hessian">
+<code class="descclassname">diamond.solvers.utils.</code><code class="descname">l2_clogistic_hessian</code><span class="sig-paren">(</span><em>X</em>, <em>Y</em>, <em>intercept=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/solvers/utils.html#l2_clogistic_hessian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.solvers.utils.l2_clogistic_hessian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hessian matrix of proportional odds cumulative logit model</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>X</strong> &#8211; array_like. design matrix</li>
+<li><strong>Y</strong> &#8211; array_like. response matrix</li>
+<li><strong>intercept</strong> &#8211; boolean. If intercept=False,            just calculate the gradient for the coefficients</li>
+<li><strong>alpha</strong> &#8211; array_like, optional.intercepts.            must have shape == one less than the number of columns of <cite>Y</cite></li>
+<li><strong>beta</strong> &#8211; array_like, optional. parameters.            must have shape == number of columns of X</li>
+<li><strong>offset</strong> &#8211; array_like, optional. Defaults to 0</li>
+<li><strong>penalty_matrix</strong> &#8211; array_like, optional.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Square matrix of dimension == number of columns of <cite>X</cite></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="diamond.solvers.utils.l2_clogistic_llh">
+<code class="descclassname">diamond.solvers.utils.</code><code class="descname">l2_clogistic_llh</code><span class="sig-paren">(</span><em>X</em>, <em>Y</em>, <em>alpha</em>, <em>beta</em>, <em>penalty_matrix</em>, <em>offset</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/solvers/utils.html#l2_clogistic_llh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.solvers.utils.l2_clogistic_llh" title="Permalink to this definition">¶</a></dt>
+<dd><p>Penalized log likelihood function for proportional odds cumulative logit model</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>X</strong> &#8211; array_like. design matrix</li>
+<li><strong>Y</strong> &#8211; array_like. response matrix</li>
+<li><strong>alpha</strong> &#8211; array_like. intercepts.        must have shape == one less than the number of columns of <cite>Y</cite></li>
+<li><strong>beta</strong> &#8211; array_like. parameters.        must have shape == number of columns of X</li>
+<li><strong>penalty_matrix</strong> &#8211; array_like. Regularization matrix</li>
+<li><strong>offset</strong> &#8211; array_like, optional. Defaults to 0</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">penalized loglikelihood</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">scalar</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="diamond.solvers.utils.l2_clogistic_ranef">
+<code class="descclassname">diamond.solvers.utils.</code><code class="descname">l2_clogistic_ranef</code><span class="sig-paren">(</span><em>X</em>, <em>Y</em>, <em>alpha</em>, <em>beta</em>, <em>penalty_matrix</em>, <em>offset</em>, <em>LU</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/solvers/utils.html#l2_clogistic_ranef"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.solvers.utils.l2_clogistic_ranef" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use a fixed inverse hessian to determine step direction     this inverse hessian is represented by the LU decomposition of the approximate Hessian</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>X</strong> &#8211; array_like. design matrix</li>
+<li><strong>Y</strong> &#8211; array_like. response matrix</li>
+<li><strong>alpha</strong> &#8211; array_like. intercepts.        must have shape == one less than the number of columns of <cite>Y</cite></li>
+<li><strong>beta</strong> &#8211; array_like. parameters.        must have shape == number of columns of X</li>
+<li><strong>penalty_matrix</strong> &#8211; array_like</li>
+<li><strong>offset</strong> &#8211; array_like, optional. Defaults to 0</li>
+<li><strong>LU</strong> &#8211; LU decomposition of approximate Hessian matrix</li>
+<li><strong>min_its</strong> &#8211; int, optional. Minimum number of iterations to take</li>
+<li><strong>max_its</strong> &#8211; int, optional. Maximum number of iterations to take</li>
+<li><strong>tol</strong> &#8211; float. Convergence tolerance on relative change in <cite>beta</cite></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Updated parameter vector <cite>beta</cite></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="diamond.solvers.utils.l2_logistic_fixed_hessian">
+<code class="descclassname">diamond.solvers.utils.</code><code class="descname">l2_logistic_fixed_hessian</code><span class="sig-paren">(</span><em>X</em>, <em>Y</em>, <em>fixed_hess_inv</em>, <em>penaltysq=None</em>, <em>min_its=2</em>, <em>max_its=200</em>, <em>beta=None</em>, <em>offset=None</em>, <em>tol=0.001</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/solvers/utils.html#l2_logistic_fixed_hessian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.solvers.utils.l2_logistic_fixed_hessian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit a l2-regularized logistic regression with a fixed-Hessian Newtonish method.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>X</strong> &#8211; array_like. Design matrix</li>
+<li><strong>Y</strong> &#8211; array_like. Vector of responses with values in {0, 1}</li>
+<li><strong>fixed_hess_inv</strong> &#8211; sparse penalty matrix</li>
+<li><strong>penalty_sq</strong> &#8211; array_like. Square penalty matrix</li>
+<li><strong>min_its</strong> &#8211; int. Minimum number of iterations</li>
+<li><strong>max_its</strong> &#8211; int. Maximum number of iterations</li>
+<li><strong>beta</strong> &#8211; array_like. Vector of initial parameters, with length == number of columns of <cite>X</cite></li>
+<li><strong>offset</strong> &#8211; array_like. Added to X * beta. Defaults to 0</li>
+<li><strong>tol</strong> &#8211; float. Convergence tolerance on relative change in <cite>beta</cite></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">array_like. Estimated parameters</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="diamond.solvers.utils.solve">
+<code class="descclassname">diamond.solvers.utils.</code><code class="descname">solve</code><span class="sig-paren">(</span><em>A</em>, <em>b</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/solvers/utils.html#solve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.solvers.utils.solve" title="Permalink to this definition">¶</a></dt>
+<dd><p>A generic linear solver for sparse and dense matrices</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>A</strong> &#8211; array_like, possibly sparse</li>
+<li><strong>b</strong> &#8211; array_like</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">x such that Ax = b</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="diamond.glms.html" class="btn btn-neutral" title="GLMs" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Aaron Bradley, Tim Sweetser.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

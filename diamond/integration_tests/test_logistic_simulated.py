@@ -19,7 +19,7 @@ class TestLogistic(unittest.TestCase):
         resources_exist = os.path.exists(simulated_data_loc) and os.path.exists(estimated_covariance_loc)
         if not resources_exist:
             logging.info("Simulating data and estimating covariances in R")
-            os.system("/usr/local/bin/Rscript %s/logistic_generate_and_fit.R" % folder)
+            os.system("Rscript %s/logistic_generate_and_fit.R" % folder)
         logging.info("Reading in training data and R::lme4-estimated covariance matrix")
         df_train = pd.read_csv(simulated_data_loc)
         df_estimated_covariance = pd.read_csv(estimated_covariance_loc)

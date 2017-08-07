@@ -1,0 +1,444 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>GLMs &mdash; Diamond  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="Diamond  documentation" href="index.html"/>
+        <link rel="next" title="Solvers" href="diamond.solvers.html"/>
+        <link rel="prev" title="Diamond" href="index.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Diamond
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">GLMs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-diamond.glms.cumulative_logistic">cumulative_logistic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-diamond.glms.glm">glm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-diamond.glms.logistic">logistic</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="diamond.solvers.html">Solvers</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Diamond</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>GLMs</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/diamond.glms.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="glms">
+<h1>GLMs<a class="headerlink" href="#glms" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-diamond.glms.cumulative_logistic">
+<span id="cumulative-logistic"></span><h2>cumulative_logistic<a class="headerlink" href="#module-diamond.glms.cumulative_logistic" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="diamond.glms.cumulative_logistic.CumulativeLogisticRegression">
+<em class="property">class </em><code class="descclassname">diamond.glms.cumulative_logistic.</code><code class="descname">CumulativeLogisticRegression</code><span class="sig-paren">(</span><em>train_df</em>, <em>priors_df</em>, <em>copy=False</em>, <em>test_df=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/glms/cumulative_logistic.html#CumulativeLogisticRegression"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.glms.cumulative_logistic.CumulativeLogisticRegression" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#diamond.glms.glm.GLM" title="diamond.glms.glm.GLM"><code class="xref py py-class docutils literal"><span class="pre">diamond.glms.glm.GLM</span></code></a></p>
+<p>Cumulative logistic regression model
+with arbitrary crossed random effects and known covariances</p>
+<dl class="method">
+<dt id="diamond.glms.cumulative_logistic.CumulativeLogisticRegression.fit">
+<code class="descname">fit</code><span class="sig-paren">(</span><em>formula</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/glms/cumulative_logistic.html#CumulativeLogisticRegression.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.glms.cumulative_logistic.CumulativeLogisticRegression.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit the model specified by formula and training data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>formula</strong> (<em>string</em>) &#8211; R-style formula expressing the model to fit. eg. <img class="math" src="_images/math/4247fba7efc4990b9131a2a98615af7082d8cfc8.png" alt="y \sim 1 + x + (1 + x | group)"/></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Keyword Arguments:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body"><ul class="first simple">
+<li><strong>intercepts</strong> &#8211; array-like, optional. Initial values for intercepts. Must be monotonically increasing and have length == number of response levels minus one</li>
+<li><strong>main</strong> &#8211; array-like, optional. Initial values for main effects. Must have length == number of main effects specified in formula</li>
+<li><strong>kwargs</strong> &#8211; additional arguments passed to solver.fit</li>
+</ul>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">dict of parameter estimates with keys &#8220;intercepts&#8221;, &#8220;main&#8221;, and one key for each grouping factor</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="diamond.glms.cumulative_logistic.CumulativeLogisticRegression.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>formula</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/glms/cumulative_logistic.html#CumulativeLogisticRegression.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.glms.cumulative_logistic.CumulativeLogisticRegression.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get ready to fit the model by parsing the formula, checking priors, and creating design, penalty, and Hessian matrices</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>formula</strong> (<em>string</em>) &#8211; R-style formula expressing the model to fit. eg. <img class="math" src="_images/math/4247fba7efc4990b9131a2a98615af7082d8cfc8.png" alt="y \sim 1 + x + (1 + x | group)"/></td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Keyword Arguments:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body"><strong>kwargs</strong> &#8211; additional arguments to pass to solver.fit method</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="diamond.glms.cumulative_logistic.CumulativeLogisticRegression.predict">
+<code class="descname">predict</code><span class="sig-paren">(</span><em>new_df</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/glms/cumulative_logistic.html#CumulativeLogisticRegression.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.glms.cumulative_logistic.CumulativeLogisticRegression.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use the estimated model to make predictions.         New levels of grouping factors are given fixed effects, with zero random effects</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>new_df</strong> (<em>DataFrame</em>) &#8211; data to make predictions on</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">n x J matrix, where n is the number of rows             of new_df and J is the number             of possible response values. The (i, j) entry of            this matrix is the probability that observation i             realizes response level j.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-diamond.glms.glm">
+<span id="glm"></span><h2>glm<a class="headerlink" href="#module-diamond.glms.glm" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="diamond.glms.glm.GLM">
+<em class="property">class </em><code class="descclassname">diamond.glms.glm.</code><code class="descname">GLM</code><span class="sig-paren">(</span><em>train_df</em>, <em>priors_df</em>, <em>copy=False</em>, <em>test_df=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/glms/glm.html#GLM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.glms.glm.GLM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>Binary or cumulative logistic regression model with arbitrary crossed random effects and known covariance</p>
+<p>Initialize a diamond model</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>train_df</strong> (<em>DataFrame</em>) &#8211; DataFrame to estimate the model parameters with</li>
+<li><strong>priors_df</strong> (<em>DataFrame</em>) &#8211; Covariance matrix to use for regularization.
+Format is | group | var1 | var2 | vcov |
+where group represents the grouping factor, var1 and var2 specify the row and column of the covariance matrix,
+and vcov is a scalar for that entry of the covariance matrix. Note that if var2 is NULL, vcov is
+interpreted as the diagonal element of the covariance matrix for var1</li>
+<li><strong>copy</strong> (<em>boolean</em>) &#8211; Make a copy of train_df. If False, new columns will be created and the index will be reset.</li>
+<li><strong>test_df</strong> (<em>DataFrame</em>) &#8211; This is used to make predictions.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Object (GLM)</p>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="diamond.glms.glm.GLM.fit">
+<code class="descname">fit</code><span class="sig-paren">(</span><em>formula</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/glms/glm.html#GLM.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.glms.glm.GLM.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Must be implemented by subclasses</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="diamond.glms.glm.GLM.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>formula</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/glms/glm.html#GLM.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.glms.glm.GLM.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get ready to fit the model by parsing the formula, checking priors, and creating design, penalty, and Hessian matrices</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>formula</strong> (<em>string</em>) &#8211; R-style formula expressing the model to fit. eg. <img class="math" src="_images/math/4247fba7efc4990b9131a2a98615af7082d8cfc8.png" alt="y \sim 1 + x + (1 + x | group)"/></td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Keyword Arguments:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body"><strong>kwargs</strong> &#8211; additional arguments to pass to fit method</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="diamond.glms.glm.GLM.predict">
+<code class="descname">predict</code><span class="sig-paren">(</span><em>new_df</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/glms/glm.html#GLM.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.glms.glm.GLM.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain predictions from a fitted diamond object. New levels of grouping factors are given fixed effects, with zero random effects</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>new_df</strong> (<em>DataFrame</em>) &#8211; data to make predictions on</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">predictions, whose length is equal to the number of rows of the supplied DataFrame</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">array_like</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-diamond.glms.logistic">
+<span id="logistic"></span><h2>logistic<a class="headerlink" href="#module-diamond.glms.logistic" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="diamond.glms.logistic.LogisticRegression">
+<em class="property">class </em><code class="descclassname">diamond.glms.logistic.</code><code class="descname">LogisticRegression</code><span class="sig-paren">(</span><em>train_df</em>, <em>priors_df</em>, <em>copy=False</em>, <em>test_df=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/glms/logistic.html#LogisticRegression"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.glms.logistic.LogisticRegression" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#diamond.glms.glm.GLM" title="diamond.glms.glm.GLM"><code class="xref py py-class docutils literal"><span class="pre">diamond.glms.glm.GLM</span></code></a></p>
+<p>Logistic regression model
+with arbitrary crossed random effects and known covariances</p>
+<dl class="method">
+<dt id="diamond.glms.logistic.LogisticRegression.fit">
+<code class="descname">fit</code><span class="sig-paren">(</span><em>formula</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/glms/logistic.html#LogisticRegression.fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.glms.logistic.LogisticRegression.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit the model specified by formula and training data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>formula</strong> (<em>string</em>) &#8211; R-style formula expressing the model to fit. eg. <img class="math" src="_images/math/4247fba7efc4990b9131a2a98615af7082d8cfc8.png" alt="y \sim 1 + x + (1 + x | group)"/></td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Keyword Arguments:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body"><strong>kwargs</strong> &#8211; additional arguments passed to solver</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">dict of estimated parameters</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="diamond.glms.logistic.LogisticRegression.predict">
+<code class="descname">predict</code><span class="sig-paren">(</span><em>new_df</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/glms/logistic.html#LogisticRegression.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.glms.logistic.LogisticRegression.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use estimated coefficients to make predictions on new data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>new_df</strong> (<em>DataFrame</em>) &#8211; </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">array-like. Predictions on the response scale, i.e. probabilities</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="diamond.glms.logistic.LogisticRegression.refit">
+<code class="descname">refit</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/diamond/glms/logistic.html#LogisticRegression.refit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#diamond.glms.logistic.LogisticRegression.refit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update a fitted model. Any kwargs not supplied will be reused from original call to self.fit()</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>None</strong> &#8211; </td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Keyword Arguments:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body"><strong>kwargs</strong> &#8211; fitting parameters</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="diamond.solvers.html" class="btn btn-neutral float-right" title="Solvers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="Diamond" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Aaron Bradley, Tim Sweetser.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

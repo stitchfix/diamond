@@ -1,0 +1,399 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>diamond.glms.logistic &mdash; Diamond  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="Diamond  documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Diamond
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../diamond.glms.html">GLMs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../diamond.solvers.html">Solvers</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Diamond</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>diamond.glms.logistic</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for diamond.glms.logistic</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">diamond.glms.glm</span> <span class="k">import</span> <span class="n">GLM</span>
+<span class="kn">from</span> <span class="nn">diamond.solvers.diamond_logistic</span> <span class="k">import</span> <span class="n">FixedHessianSolverMulti</span>
+<span class="kn">from</span> <span class="nn">diamond.solvers.utils</span> <span class="k">import</span> <span class="n">custom_block_diag</span>
+<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="k">import</span> <span class="n">expit</span>
+
+<span class="n">LOGGER</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">LOGGER</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="LogisticRegression"><a class="viewcode-back" href="../../../diamond.glms.html#diamond.glms.logistic.LogisticRegression">[docs]</a><span class="k">class</span> <span class="nc">LogisticRegression</span><span class="p">(</span><span class="n">GLM</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Logistic regression model</span>
+<span class="sd">    with arbitrary crossed random effects and known covariances</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_df</span><span class="p">,</span> <span class="n">priors_df</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">test_df</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">LogisticRegression</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">train_df</span><span class="p">,</span> <span class="n">priors_df</span><span class="p">,</span> <span class="n">copy</span><span class="p">,</span> <span class="n">test_df</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">solver</span> <span class="o">=</span> <span class="n">FixedHessianSolverMulti</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">H_main_inv</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">H_invs</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="nf">_create_response_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Store vector of binary responses in an array &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">response</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_create_hessians</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Create bounds on the Hessian matrices</span>
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;creating Hessians&quot;</span><span class="p">)</span>
+        <span class="n">H_main</span> <span class="o">=</span> <span class="mf">0.25</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">main_design</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">main_design</span><span class="p">)</span><span class="o">.</span><span class="n">todense</span><span class="p">())</span>
+        <span class="c1"># do a pseudoinverse for the main effects because they are</span>
+        <span class="c1"># unregularized and could be constant columns</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">H_main_inv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">pinv</span><span class="p">(</span><span class="n">H_main</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;creating H_inter for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">g</span><span class="p">)</span>
+            <span class="n">inter_design</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grouping_designs</span><span class="p">[</span><span class="n">g</span><span class="p">]</span>
+            <span class="n">H_inter</span> <span class="o">=</span> <span class="mf">0.25</span> <span class="o">*</span> <span class="n">inter_design</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">inter_design</span><span class="p">)</span>
+
+            <span class="n">q</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">level_maps</span><span class="p">[</span><span class="n">g</span><span class="p">])</span>
+            <span class="n">inv_blocks</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">block_length</span> <span class="o">=</span> <span class="n">H_inter</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">q</span>
+
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">q</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="o">%</span> <span class="mi">100000</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;time elapsed: </span><span class="si">%.1f</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">)</span>
+                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;blocks inverted: </span><span class="si">%i</span><span class="s2"> of </span><span class="si">%i</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>
+                <span class="n">block</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">H_inter</span><span class="p">[(</span><span class="n">k</span> <span class="o">*</span> <span class="n">block_length</span><span class="p">):((</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">block_length</span><span class="p">),</span>
+                                 <span class="p">(</span><span class="n">k</span> <span class="o">*</span> <span class="n">block_length</span><span class="p">):((</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">block_length</span><span class="p">)]</span><span class="o">.</span><span class="n">todense</span><span class="p">())</span>
+                <span class="n">inv_blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">block</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">sparse_inv_covs</span><span class="p">[</span><span class="n">g</span><span class="p">]</span><span class="o">.</span><span class="n">_block</span><span class="p">))</span>
+
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;creating H_invs&quot;</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">H_invs</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">=</span> <span class="n">custom_block_diag</span><span class="p">(</span><span class="n">inv_blocks</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">H_invs</span><span class="p">[</span><span class="s1">&#39;main&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">H_main_inv</span>
+
+<div class="viewcode-block" id="LogisticRegression.fit"><a class="viewcode-back" href="../../../diamond.glms.html#diamond.glms.logistic.LogisticRegression.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">formula</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot; Fit the model specified by formula and training data</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            formula (string): R-style formula expressing the model to fit. eg. :math:`y \sim 1 + x + (1 + x | group)`</span>
+<span class="sd">        Keyword Args:</span>
+<span class="sd">            kwargs : additional arguments passed to solver</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            dict of estimated parameters</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">formula</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">effects</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj_fun</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">response</span><span class="p">,</span>
+                                                     <span class="bp">self</span><span class="o">.</span><span class="n">grouping_designs</span><span class="p">,</span>
+                                                     <span class="bp">self</span><span class="o">.</span><span class="n">H_invs</span><span class="p">,</span>
+                                                     <span class="bp">self</span><span class="o">.</span><span class="n">sparse_inv_covs</span><span class="p">,</span>
+                                                     <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_create_output_dict</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">results_dict</span></div>
+
+<div class="viewcode-block" id="LogisticRegression.refit"><a class="viewcode-back" href="../../../diamond.glms.html#diamond.glms.logistic.LogisticRegression.refit">[docs]</a>    <span class="k">def</span> <span class="nf">refit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot; Update a fitted model. Any kwargs not supplied will be reused from original call to self.fit()</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+<span class="sd">        Keyword Args:</span>
+<span class="sd">            kwargs: fitting parameters</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+                  <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fit_kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">())}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">effects</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">obj_fun</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">response</span><span class="p">,</span>
+                                                     <span class="bp">self</span><span class="o">.</span><span class="n">grouping_designs</span><span class="p">,</span>
+                                                     <span class="bp">self</span><span class="o">.</span><span class="n">H_invs</span><span class="p">,</span>
+                                                     <span class="bp">self</span><span class="o">.</span><span class="n">sparse_inv_covs</span><span class="p">,</span>
+                                                     <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_create_output_dict</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">results_dict</span></div>
+
+    <span class="k">def</span> <span class="nf">_create_output_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Extract coefficients</span>
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Dictionary of estimated coefficients. Keys are &quot;fixed_effects&quot; and one key for each grouping factor</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;extracting coefficients&quot;</span><span class="p">)</span>
+        <span class="n">main_coefs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;variable&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">main_effects</span><span class="p">,</span>
+                                   <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">effects</span><span class="p">[</span><span class="s2">&quot;main&quot;</span><span class="p">]})</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">results_dict</span><span class="p">[</span><span class="s1">&#39;fixed_effects&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">main_coefs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_create_output_dict_inter</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_merge_effects</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Add together estimated fixed and random coefficients</span>
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;extracting coefficients&quot;</span><span class="p">)</span>
+        <span class="n">main_coefs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;variable&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">main_effects</span><span class="p">,</span>
+                                   <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">effects</span><span class="p">[</span><span class="s2">&quot;main&quot;</span><span class="p">]})</span>
+
+        <span class="n">groupings_coefs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">coefs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;inter_value&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">effects</span><span class="p">[</span><span class="n">g</span><span class="p">]})</span>
+
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">g</span> <span class="o">+</span> <span class="s1">&#39;_idx&#39;</span>
+            <span class="n">coefs</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">coefs</span><span class="p">))</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="p">[</span><span class="n">g</span><span class="p">])</span>
+            <span class="n">coefs</span><span class="p">[</span><span class="s1">&#39;inter_idx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">coefs</span><span class="p">)),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="p">[</span><span class="n">g</span><span class="p">]))</span>
+
+            <span class="n">coefs</span> <span class="o">=</span> <span class="n">coefs</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inter_maps</span><span class="p">[</span><span class="n">g</span><span class="p">],</span> <span class="n">on</span><span class="o">=</span><span class="s1">&#39;inter_idx&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">level_maps</span><span class="p">[</span><span class="n">g</span><span class="p">],</span> <span class="n">on</span><span class="o">=</span><span class="n">idx</span><span class="p">)</span>
+            <span class="n">groupings_coefs</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">=</span> <span class="n">coefs</span>
+
+        <span class="c1"># start merging all of the coefficients together</span>
+        <span class="n">merged_coefs</span> <span class="o">=</span> <span class="n">main_coefs</span>
+        <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">groupings_coefs</span><span class="p">:</span>
+            <span class="n">merged_coefs</span> <span class="o">=</span> <span class="n">merged_coefs</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">groupings_coefs</span><span class="p">[</span><span class="n">g</span><span class="p">],</span> <span class="n">on</span><span class="o">=</span><span class="s1">&#39;variable&#39;</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;right&#39;</span><span class="p">,</span> <span class="n">suffixes</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;_1&#39;</span><span class="p">,</span> <span class="s1">&#39;_2&#39;</span><span class="p">))</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">merged_coefs</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">merged_coefs</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">merged_coefs</span><span class="p">[</span><span class="s1">&#39;inter_value&#39;</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="n">merged_coefs</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">merged_coefs</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">merged_coefs</span><span class="p">[</span><span class="s1">&#39;inter_value_2&#39;</span><span class="p">]</span>
+
+        <span class="c1"># do some wrangling to get the pivot to work correctly</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grouping_factors</span>
+        <span class="n">cols</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s1">&#39;variable&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">])</span>
+        <span class="n">merged_coefs</span> <span class="o">=</span> <span class="n">merged_coefs</span><span class="p">[</span><span class="n">cols</span><span class="p">]</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_levels</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span> <span class="o">*</span> <span class="n">merged_coefs</span><span class="o">.</span><span class="n">variable</span><span class="o">.</span><span class="n">nunique</span><span class="p">()</span>
+        <span class="n">merged_coefs</span><span class="p">[</span><span class="s1">&#39;index&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">index</span>
+
+        <span class="n">pivoted_merged_coefs</span> <span class="o">=</span> <span class="n">merged_coefs</span><span class="o">.</span><span class="n">pivot</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="s1">&#39;index&#39;</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="s1">&#39;variable&#39;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="s1">&#39;value&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+        <span class="k">del</span> <span class="n">pivoted_merged_coefs</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">pivoted_merged_coefs</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="n">pivoted_merged_coefs</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">merged_coefs</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s1">&#39;index&#39;</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span>
+            <span class="p">[</span><span class="s1">&#39;variable&#39;</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="s1">&#39;index&#39;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Add in columns that are main effects but not interaction effects</span>
+        <span class="n">inter_cols</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">groupings</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">main_cols</span> <span class="o">=</span> <span class="n">main_coefs</span><span class="p">[</span><span class="s1">&#39;variable&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+        <span class="n">vars_to_add</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">main_cols</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">inter_cols</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">vars_to_add</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> is a main effect but not an interaction effect. Adding it to the results now&quot;</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">main_coefs</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="n">main_coefs</span><span class="p">[</span><span class="s1">&#39;variable&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">v</span><span class="p">])</span>
+
+<div class="viewcode-block" id="LogisticRegression.predict"><a class="viewcode-back" href="../../../diamond.glms.html#diamond.glms.logistic.LogisticRegression.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_df</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Use estimated coefficients to make predictions on new data</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            new_df (DataFrame). DataFrame to make predictions on.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            array-like. Predictions on the response scale, i.e. probabilities</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">expit</span><span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">LogisticRegression</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">new_df</span><span class="p">))</span></div></div>
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Aaron Bradley, Tim Sweetser.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

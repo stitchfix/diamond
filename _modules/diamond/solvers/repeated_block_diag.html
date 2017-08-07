@@ -1,0 +1,294 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>diamond.solvers.repeated_block_diag &mdash; Diamond  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="Diamond  documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> Diamond
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../diamond.glms.html">GLMs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../diamond.solvers.html">Solvers</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Diamond</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>diamond.solvers.repeated_block_diag</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for diamond.solvers.repeated_block_diag</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">sparse</span>
+
+<span class="kn">import</span> <span class="nn">pyximport</span>
+
+<span class="n">pyximport</span><span class="o">.</span><span class="n">install</span><span class="p">(</span><span class="n">setup_args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;include_dirs&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">get_include</span><span class="p">()},</span>
+                  <span class="n">reload_support</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">diamond.solvers.repeated_block_dot</span> <span class="k">import</span> <span class="n">repeated_block_dot</span>
+
+
+<div class="viewcode-block" id="RepeatedBlockDiagonal"><a class="viewcode-back" href="../../../diamond.solvers.html#diamond.solvers.repeated_block_diag.RepeatedBlockDiagonal">[docs]</a><span class="k">class</span> <span class="nc">RepeatedBlockDiagonal</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">block</span><span class="p">,</span> <span class="n">num_blocks</span><span class="p">):</span>
+
+        <span class="p">(</span><span class="n">k1</span><span class="p">,</span> <span class="n">k2</span><span class="p">)</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">assert</span> <span class="n">k1</span> <span class="o">==</span> <span class="n">k2</span><span class="p">,</span> <span class="s2">&quot;Block must be square&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_block</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">*</span> <span class="n">block</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_block_shape</span> <span class="o">=</span> <span class="n">k1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_num_blocks</span> <span class="o">=</span> <span class="n">num_blocks</span>
+
+<div class="viewcode-block" id="RepeatedBlockDiagonal.dot"><a class="viewcode-back" href="../../../diamond.solvers.html#diamond.solvers.repeated_block_diag.RepeatedBlockDiagonal.dot">[docs]</a>    <span class="k">def</span> <span class="nf">dot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Perform dot product between RepeatedBlockDiagonal objects</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x : RepeatedBlockDiagonal.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            repeated_block_dot with dot product of the 2 matrices</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">repeated_block_dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_block</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_block_shape</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">sparse_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Create a block diagonal sparse matrix, with a single repeated block</span>
+
+<span class="sd">        This method essentially replicates the functionality of scipy.linalg.block_diag.</span>
+<span class="sd">        We rewrote it for this special case to improve the memory footprint - scipy&#39;s version</span>
+<span class="sd">        is general purpose, allowing different blocks along the diagonal. The implementation of</span>
+<span class="sd">        it is too memory intensive and quickly causes OOM errors with resonably sized</span>
+<span class="sd">        design matrices. In our case, we only have one block we are replicating along the</span>
+<span class="sd">        diagonal, so we don&#39;t need to iteratively build up the overall block diagonal matrix.</span>
+
+<span class="sd">        :return:</span>
+<span class="sd">            csr block diagonal matrix</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># L = number of repated blocks (i.e. num_levels)</span>
+        <span class="n">L</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_blocks</span>
+        <span class="n">K</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_block_shape</span>
+
+        <span class="n">_block_rep</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_block</span><span class="o">.</span><span class="n">flatten</span><span class="p">()),</span> <span class="n">L</span><span class="p">)</span>
+
+        <span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">L</span><span class="o">*</span><span class="n">K</span><span class="p">),</span> <span class="n">K</span><span class="p">)</span>
+        <span class="n">j</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">K</span><span class="p">),</span><span class="n">K</span><span class="p">),</span> <span class="n">L</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">L</span><span class="o">*</span><span class="n">K</span><span class="p">,</span> <span class="n">K</span><span class="p">),</span> <span class="n">K</span><span class="o">*</span><span class="n">K</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">sparse</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">((</span><span class="n">_block_rep</span><span class="p">,</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)),</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">L</span><span class="o">*</span><span class="n">K</span><span class="p">,</span><span class="n">L</span><span class="o">*</span><span class="n">K</span><span class="p">))</span></div>
+
+
+<span class="c1"># TODO: Make real unit tests</span>
+<div class="viewcode-block" id="test_repeated_block"><a class="viewcode-back" href="../../../diamond.solvers.html#diamond.solvers.repeated_block_diag.test_repeated_block">[docs]</a><span class="k">def</span> <span class="nf">test_repeated_block</span><span class="p">():</span>
+
+    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+
+    <span class="n">k</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="mi">10</span>
+
+    <span class="n">block</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">standard_normal</span><span class="p">((</span><span class="n">k</span><span class="p">,</span><span class="n">k</span><span class="p">))</span>
+    <span class="n">vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">standard_normal</span><span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">m</span><span class="p">)</span>
+
+    <span class="n">r</span> <span class="o">=</span> <span class="n">RepeatedBlockDiagonal</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span>
+
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_almost_equal</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">vec</span><span class="p">),</span>
+                                         <span class="n">r</span><span class="o">.</span><span class="n">sparse_matrix</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">vec</span><span class="p">))</span></div>
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Aaron Bradley, Tim Sweetser.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
