@@ -153,71 +153,7 @@
             
   <div class="section" id="diamond">
 <h1>Diamond<a class="headerlink" href="#diamond" title="Permalink to this headline">¶</a></h1>
-<p>Diamond utilizes iterative, quasi-Newton 2nd-order solvers to estimate certain generalized linear models (glms) with known covariance structure. A common use is fitting mixed effects models, with their covariance already being known by another means (e.g. after fitting in R using lme4). These 2nd-order iterative solvers are considerably faster than a full-blown solution, assuming that the covariances are known. Currently, Diamond does not solve for the covariance structure. This must be input a-priori. In addition, only logistic and ordinal logistic response variables are currently implemented. Mathematically, Diamond solves the following problem:</p>
-<p>If <img class="math" src="_images/math/b359488b993294ebbc2c7b30ab8f749dcbc6826d.png" alt="l"/> is the loglikelihood of the data given parameters
-<img class="math" src="_images/math/00721f7fb5ddb9664e171580f6541cf7887beac4.png" alt="\vec\beta"/>, diamond minimizes
-<img class="math" src="_images/math/2cc526f99e2ba5e7a0e6b7a5a09302601ccf5a51.png" alt="-l + \frac{1}{2} \vec\beta^T \Pi \vec\beta"/>
-for a given matrix <img class="math" src="_images/math/48df4c3c7ccc8857bb1a8690c2b1207275b0a626.png" alt="\Pi"/></p>
-<p>For logistic regression, <img class="math" src="_images/math/6f5e6d9e1c2b80c8f42107413192c09561d8b76d.png" alt="l = \sum\limits_{i=1}^n y_i log(p_i) + (1-y_i) log(1-p_i)"/>
-where <img class="math" src="_images/math/ca142aaa31a0adfe58beb10b4f5f69630cb2d926.png" alt="p_i = \sigma^{-1}(\vec\beta^T x_i)"/></p>
-<p>For ordinal logistic regression,
-<img class="math" src="_images/math/d4b60f7c1fcb4e55348df080bdc87d4e4e60f50c.png" alt="l = l(\textbf{y}|\vec \alpha, \vec \beta ) = \sum\limits_{i=1}^n \sum\limits_{j=1}^J y_{ij} \left [ \sigma^{-1}(\alpha_j + \vec \beta \cdot \vec x_i) - \sigma^{-1}(\alpha_{j-1} + \vec \beta \cdot \vec x_i) \right ]"/></p>
-<dl class="docutils">
-<dt>where</dt>
-<dd><ul class="first last simple">
-<li><img class="math" src="_images/math/849097c224e823465ecb239482d24683e4652c3c.png" alt="\sigma^{-1}(x) = \frac{1}{1 + e^{-x}}"/> is the inverse logit function</li>
-<li><img class="math" src="_images/math/103bf5981422683fd1a82b4609065487afb86302.png" alt="\vec\alpha"/> are the intercepts</li>
-<li><img class="math" src="_images/math/8e350636abbdcf2684cc60576022fe3ef6dd1679.png" alt="\vec x_i"/> the features of observation <img class="math" src="_images/math/df0deb143e5ac127f00bd248ee8001ecae572adc.png" alt="i"/></li>
-<li><img class="math" src="_images/math/398f32eac7d4da7106a390d281c2f6925b6819ca.png" alt="y_{ij}=1"/> if and only if observation <img class="math" src="_images/math/df0deb143e5ac127f00bd248ee8001ecae572adc.png" alt="i"/> realizes response level <img class="math" src="_images/math/6b21e0b0899a0d2879d3b8019087fa630bab4ea2.png" alt="j"/></li>
-<li><img class="math" src="_images/math/5e6c83942c1e4d68229eb84bc09254178771f986.png" alt="y_{ij}=0"/> in all other cases</li>
-</ul>
-</dd>
-</dl>
-</div>
-<div class="section" id="optimization-details">
-<h1>Optimization Details<a class="headerlink" href="#optimization-details" title="Permalink to this headline">¶</a></h1>
-<p>The key idea is that we can _almost_ separate the optimization problem across levels fo the random effects. But of course the main effects are common to the model for each level, so we can&#8217;t really separate the problem. This does, however, suggest a strategy that alternates between two stages:</p>
-<blockquote>
-<div><ol class="arabic simple">
-<li>solve for main effects</li>
-<li>solve for random effect coefficients with the main effects from (1) treated as constants</li>
-</ol>
-</div></blockquote>
-<p>Because the whole problem is convex this alternating iteration will converge.</p>
-<p>The advantage of this approach is that the sub-problem in (2) has a block diagonal Hessian matrix and so we can afford to invert it. This will let us use a newton-like method that will converge faster than a 1st order approach.</p>
-<p>Diamond was designed to tackle large problems with many random effect levels. One of the biggest bottlenecks with a standard Newton iterative approach is the need to invert the Hessian at every step. Even with ours being block-diagonal, this can be a considerably slow operation. To speed up convergence, we employ a fixed-Hessian approach, where we compute the Hessian once at the beginning, then treat it as fixed throughout all iterations.</p>
-<p>In principle, one could also separate the problem in (2) across levels and solve them in parallel, potentially making it faster still / sidestepping the need for tons of memory.</p>
-<p>The reason the fixed Hessian might be useful is related to the convexity of the problem. One helpful way of thinking about it is to think of gradient descent, Newton&#8217;s method and the fixed Hessian as all being example of majorization-minimization algorithms.</p>
-<p>The basic idea is that instead of minimizing our function f (which we don&#8217;t know how to do analytically) we form a local approximation to f with a simple form and minimize that. Then we iterate between forming new local approximations and minimizing them.</p>
-<p>The choice of the local approximation gives different methods:</p>
-<blockquote>
-<div><ul class="simple">
-<li>gradient descent: a &#8220;diagonal&#8221; quadratic approximation <strong>INSERT EQUATION HERE</strong></li>
-<li>newton-raphson: a 2nd order taylor approximation (with hessian) <strong>INSERT EQUATION HERE</strong></li>
-<li>fixed-Hessian: a quadratic approximation like the taylor series, but with a fixed Hessian, chosen to bound the 2nd order taylor series. The fixed Hessian matrix must be &#8220;larger&#8221; than the true Hessian (the difference must be positive definite).</li>
-</ul>
-<p>![fixed Hessian formula](<a class="reference external" href="http://www.sciweavers.org/tex2img.php?eq=%20%5Cwidetilde%7BH%7D%3D-%20%5Cfrac%7B1%7D%7B4%7DXX%5ET%20-%20%5Clambda%20%5Cem%7BI%7D%20%20&amp;bc=White&amp;fc=Black&amp;im=jpg&amp;fs=12&amp;ff=arev&amp;edit=0">http://www.sciweavers.org/tex2img.php?eq=%20%5Cwidetilde%7BH%7D%3D-%20%5Cfrac%7B1%7D%7B4%7DXX%5ET%20-%20%5Clambda%20%5Cem%7BI%7D%20%20&amp;bc=White&amp;fc=Black&amp;im=jpg&amp;fs=12&amp;ff=arev&amp;edit=0</a>&#8221; align=&#8221;center&#8221; border=&#8221;0&#8221; alt=&#8221; widetilde{H}=- frac{1}{4}XX^T - lambda em{I}  &#8221; width=&#8221;137&#8221; height=&#8221;43&#8221; /&gt; &#8220;Fixed Hessian Approximation&#8221;)</p>
-</div></blockquote>
-<p>Intuitively, the best quadratic approximation is the taylor series. But using a non-diagonal bound on the Hessian may be a much better approximation than the diagonal bound that gives us gradient descent.</p>
-</div>
-<div class="section" id="step-size">
-<h1>Step Size<a class="headerlink" href="#step-size" title="Permalink to this headline">¶</a></h1>
-<p>When using the fixed-Hessian method, we can often select better step sizes by using a conjugate gradient approach.</p>
-<p>To select the modified step size:</p>
-<blockquote>
-<div><ul class="simple">
-<li>Take the step direction (u) from the fixed hessian approach</li>
-<li>Calculate the restriction of f(x) in the direction of u, and (using the chain rule) find the exact gradient and hessian for the restriction</li>
-<li>Use the gradient/hessian to find a newton step size (a newton step for the restricted function along u)</li>
-</ul>
-</div></blockquote>
-<p>Happily, we don&#8217;t need to invert the true hessian to compute the step size, and so we can do this efficiently at each iteration</p>
-<p>The idea is to use the step direction from the fixed-Hessian method, but then to take advantage of this property to do a better job selecting the step size than we would by using the fixed hessian alone. Minka claims this is significantly better in practice.</p>
-</div>
-<div class="section" id="more-information">
-<h1>More Information<a class="headerlink" href="#more-information" title="Permalink to this headline">¶</a></h1>
-<p>For a more detailed discussion, see [<a class="reference external" href="http://research.microsoft.com/en-us/um/people/minka/papers/logreg/minka-logreg.pdf](http://research.microsoft.com/en-us/um/people/minka/papers/logreg/minka-logreg.pdf">http://research.microsoft.com/en-us/um/people/minka/papers/logreg/minka-logreg.pdf](http://research.microsoft.com/en-us/um/people/minka/papers/logreg/minka-logreg.pdf</a>) section 5: Fixed-Hessian Newton method</p>
-<p>Conjugate Gradient Method: [<a class="reference external" href="https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf](https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf">https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf](https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf</a>)</p>
+<p>Diamond utilizes iterative, quasi-Newton 2nd-order solvers to estimate certain generalized linear models (glms) with known covariance structure. A common use is fitting mixed effects models, with their covariance already being known by another means (e.g. after fitting in R using lme4). These 2nd-order iterative solvers are considerably faster than a full-blown solution, assuming that the covariances are known. Currently, Diamond does not solve for the covariance structure. This must be input a-priori. In addition, only logistic and ordinal logistic response variables are currently implemented. See the [Readme](<a class="reference external" href="http://github.com/stitchfix/diamond">http://github.com/stitchfix/diamond</a>) for more details, [this blog post]() for the math behind Diamond, and [this post] for more on mixed-effects models and the specifics of Diamond.</p>
 <p>Contents:</p>
 <div class="toctree-wrapper compound">
 <ul>
