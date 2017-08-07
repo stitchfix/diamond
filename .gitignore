@@ -1,0 +1,12 @@
+*.pyc
+*.py~
+*.pyc~
+*.so
+*.c
+.DS_Store
+.idea/
+diamond.egg-info/
+*.ipynb_checkpoints
+dist/
+build/
+*.csv
