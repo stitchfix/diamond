@@ -43,7 +43,7 @@ class GLM(object):
         # set by self.parse_formula
         self.response = None
         self.main_effects = []
-        self.groupings = defaultdict(lambda: [])
+        self.groupings = defaultdict(list)
         self.grouping_factors = []
         self.group_levels = {}
         self.num_levels = {}
