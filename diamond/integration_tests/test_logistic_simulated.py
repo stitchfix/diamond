@@ -30,7 +30,7 @@ class TestLogistic(unittest.TestCase):
                                         test_df=None)
         logging.info("Fitting model in diamond")
         self.formula = "y ~ 1 + x + (1 + x | level)"
-        results = self.model.fit(self.formula, tol=1e-4, verbose=True)
+        results = self.model.fit(self.formula, tol=1e-4, verbose=False)
 
         # the format of the coefficient vector is:
         # fixed effects, then [random intercept, random slope] for each level
