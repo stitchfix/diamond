@@ -19,6 +19,7 @@ setup(
     packages=find_packages(),
     install_requires=['numpy',
                       'scipy',
+                      'future',
                       'pandas',
                       'cython'],
     license='MIT License',

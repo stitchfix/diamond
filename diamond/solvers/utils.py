@@ -224,7 +224,7 @@ def _l2_clogistic_gradient_IL(X, alpha, beta, offset=None, **kwargs):
     Returns:
         array_like. n x J-1 matrix where entry i,j is the inverse logit of (alpha[j] + X[i, :] * beta)
     """
-    J = len(alpha) + 1L
+    J = len(alpha) + 1
     if X is None:
         n = kwargs.get("n")
     else:
@@ -233,8 +233,8 @@ def _l2_clogistic_gradient_IL(X, alpha, beta, offset=None, **kwargs):
         Xb = 0.
     else:
         Xb = dot(X, beta) + (0 if offset is None else offset)
-    IL = np.zeros((n, J - 1L))
-    for j in xrange(J - 1L):
+    IL = np.zeros((n, J - 1))
+    for j in xrange(J - 1):
         IL[:, j] = expit(alpha[j] + Xb)
     return IL
 
@@ -251,7 +251,7 @@ def _l2_clogistic_gradient_intercept(IL, Y, alpha):
     """
     exp_int = np.exp(alpha)
     grad_alpha = np.zeros(len(alpha))
-    J = len(alpha) + 1L
+    J = len(alpha) + 1
     for j in xrange(J - 1):  # intercepts
         # there are J levels, and J-1 intercepts
         # indexed from 0 to J-2
@@ -391,9 +391,9 @@ def _l2_clogistic_hessian_intercept(X, Y, ILL, alpha):
         array_like. Matrix of second derivatives of main effects and intercepts
     """
     exp_int = np.exp(alpha)
-    J = len(alpha) + 1L
-    p = X.shape[1] if X is not None else 0L
-    hess_alpha = np.zeros((p + J - 1L, p + J - 1L))
+    J = len(alpha) + 1
+    p = X.shape[1] if X is not None else 0
+    hess_alpha = np.zeros((p + J - 1, p + J - 1))
 
     # important to initialize hess to 0. this covers the non-adjacent intercepts
     for j in xrange(J - 1):
@@ -434,7 +434,7 @@ def _l2_clogistic_hessian_slope(X, Y, ILL, penalty_matrix, value=True):
         either the true Hessian if value=True, or a sparse diagonal matrix for downstream use
     """
     n = Y.shape[0]
-    J = ILL.shape[1] + 1L
+    J = ILL.shape[1] + 1
 
     D = Y[:, 0] * ILL[:, 0]  # initialization
     for j in xrange(1, J):
@@ -473,8 +473,8 @@ def l2_clogistic_ranef(X, Y, alpha, beta, penalty_matrix, offset, LU, **kwargs):
         Updated parameter vector `beta`
     """
 
-    min_its = kwargs.get('min_its', 2L)
-    max_its = kwargs.get('max_its', 200L)
+    min_its = kwargs.get('min_its', 2)
+    max_its = kwargs.get('max_its', 200)
     tol = kwargs.get('tol', 1e-3)
 
     for i in xrange(max_its):
@@ -529,10 +529,10 @@ def l2_clogistic_fixef(X, Y, **kwargs):
         offset = None
 
     J = Y.shape[1]
-    min_its = kwargs.get('min_its', 2L)
-    max_its = kwargs.get('max_its', 200L)
+    min_its = kwargs.get('min_its', 2)
+    max_its = kwargs.get('max_its', 200)
     tol = kwargs.get('tol', 1e-3)
-    alpha = kwargs.get('alpha', np.linspace(-1, 1, J - 1L))
+    alpha = kwargs.get('alpha', np.linspace(-1, 1, J - 1))
     penalty_matrix = kwargs.get('penalty_matrix', sparse.csr_matrix((p, p)))
 
     for i in xrange(max_its):

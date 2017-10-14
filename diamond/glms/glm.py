@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from diamond.solvers.repeated_block_diag import RepeatedBlockDiagonal
 from scipy import sparse
+from future.utils import iteritems
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
@@ -121,25 +122,25 @@ class GLM(object):
         Returns:
             None
         """
-        _groupings = {g: f + [np.nan] for g, f in self.groupings.iteritems()}
+        _groupings = {g: f + [np.nan] for g, f in iteritems(self.groupings)}
 
         allowed_covs = {
             g: [[v, w] for i, v in enumerate(f)
                 for j, w in enumerate(f)
                 if j > i and not isinstance(v, float)]
-            for g, f in _groupings.iteritems()
+            for g, f in iteritems(_groupings)
             }
 
         required_covs = {
             g: [[v, np.nan] for i, v in enumerate(f) if not isinstance(v, float)]
-            for g, f in _groupings.iteritems()
+            for g, f in iteritems(_groupings)
             }
 
         example_priors_data = {
-            "group": [g for g, f in allowed_covs.iteritems() for _ in f],
-            "var1": [j[0] for _, f in allowed_covs.iteritems() for j in f],
-            "var2": [j[1] for _, f in allowed_covs.iteritems() for j in f],
-            "vcov": [0.1 for _, f in allowed_covs.iteritems() for _ in f]
+            "group": [g for g, f in iteritems(allowed_covs) for _ in f],
+            "var1": [j[0] for _, f in iteritems(allowed_covs) for j in f],
+            "var2": [j[1] for _, f in iteritems(allowed_covs) for j in f],
+            "vcov": [0.1 for _, f in iteritems(allowed_covs) for _ in f]
         }
         example_priors_df = pd.DataFrame.from_dict(example_priors_data)
 
@@ -179,7 +180,7 @@ class GLM(object):
                 pass
 
         # loop through the required_covs and make sure none are remaining
-        remaining_required_covs = sum([len(f) for _, f in required_covs.iteritems()])
+        remaining_required_covs = sum([len(f) for _, f in iteritems(required_covs)])
         if remaining_required_covs > 0:
             raise AssertionError("""Priors_df is missing some required rows.
             If you want an unregularized random effect, include it as a fixed
@@ -337,7 +338,7 @@ class GLM(object):
         # inter_maps has variables in formula for this grouping factor, plus indexes
         # because of the above left join, some idx values are NULL
         # but we need to keep the row indexes
-        nrows = max(melted_inter.row_index) + 1L
+        nrows = max(melted_inter.row_index) + 1
         # now drop the null column index
         melted_inter.dropna(inplace=True)
 
@@ -353,7 +354,7 @@ class GLM(object):
             # reuse the same shape: indices are lined up, everything else will be 0 b/c of sparse matrix
             ncols = self.grouping_designs[g].shape[1]
         else:
-            ncols = max(col) + 1L
+            ncols = max(col) + 1
 
         return sparse.coo_matrix((data, (row, col)), shape=(nrows, ncols)).tocsr()
 
