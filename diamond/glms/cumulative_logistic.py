@@ -124,6 +124,6 @@ class CumulativeLogisticRegression(GLM):
         preds = np.zeros((len(eta), J))
         preds[:, 0] = expit(intercepts[0] + eta)
         preds[:, J - 1] = 1.0 - expit(intercepts[J - 2] + eta)
-        for j in xrange(1, J - 1):
+        for j in range(1, J - 1):
             preds[:, j] = expit(intercepts[j] + eta) - expit(intercepts[j - 1] + eta)
         return preds

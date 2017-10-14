@@ -54,7 +54,7 @@ class FixedHessianSolverCumulative(object):
         start_time = time.time()
         old_effects = {k: effects[k] for k in inter_designs}
 
-        for i in xrange(max_its):
+        for i in range(max_its):
             change = 0.0
             # first, do the fixed effects
             LOGGER.info("Starting to fit fixed effects")
