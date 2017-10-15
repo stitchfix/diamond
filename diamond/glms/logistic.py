@@ -6,6 +6,7 @@ from diamond.glms.glm import GLM
 from diamond.solvers.diamond_logistic import FixedHessianSolverMulti
 from diamond.solvers.utils import custom_block_diag
 from scipy.special import expit
+from solvers.utils import dot
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
@@ -18,7 +19,10 @@ class LogisticRegression(GLM):
     """
 
     def __init__(self, train_df, priors_df, copy=False, test_df=None):
-        super(LogisticRegression, self).__init__(train_df, priors_df, copy, test_df)
+        super(LogisticRegression, self).__init__(train_df,
+                                                 priors_df,
+                                                 copy,
+                                                 test_df)
         self.solver = FixedHessianSolverMulti()
         self.H_main_inv = None
         self.H_invs = {}
@@ -35,7 +39,8 @@ class LogisticRegression(GLM):
             None
         """
         LOGGER.info("creating Hessians")
-        H_main = 0.25 * np.array(self.main_design.T.dot(self.main_design).todense())
+        H_main = 0.25 * np.array(dot(self.main_design.T,
+                                     self.main_design).todense())
         # do a pseudoinverse for the main effects because they are
         # unregularized and could be constant columns
         self.H_main_inv = np.linalg.pinv(H_main)
@@ -51,11 +56,14 @@ class LogisticRegression(GLM):
 
             for k in range(q):
                 if k % 100000 == 0:
-                    LOGGER.info("time elapsed: %.1f", time.time() - self.start_time)
+                    LOGGER.info("time elapsed: %.1f",
+                                time.time() - self.start_time)
                     LOGGER.info("blocks inverted: %i of %i", k, q)
-                block = np.array(H_inter[(k * block_length):((k + 1) * block_length),
-                                 (k * block_length):((k + 1) * block_length)].todense())
-                inv_blocks.append(np.linalg.inv(block + self.sparse_inv_covs[g]._block))
+                block = H_inter[(k * block_length):((k + 1) * block_length),
+                                (k * block_length):((k + 1) * block_length)]
+                block = np.array(block.to_dense())
+                iblk = np.linalg.inv(block + self.sparse_inv_covs[g]._block)
+                inv_blocks.append(iblk)
 
             LOGGER.info("creating H_invs")
 
@@ -67,7 +75,8 @@ class LogisticRegression(GLM):
         r""" Fit the model specified by formula and training data
 
         Args:
-            formula (string): R-style formula expressing the model to fit. eg. :math:`y \sim 1 + x + (1 + x | group)`
+            formula (string): R-style formula expressing the model to fit.
+                eg. :math:`y \sim 1 + x + (1 + x | group)`
         Keyword Args:
             kwargs : additional arguments passed to solver
         Returns:
@@ -83,7 +92,8 @@ class LogisticRegression(GLM):
         return self.results_dict
 
     def refit(self, **kwargs):
-        r""" Update a fitted model. Any kwargs not supplied will be reused from original call to self.fit()
+        r""" Update a fitted model. Any kwargs not supplied will be reused
+            from original call to self.fit()
 
         Args:
             None
@@ -108,7 +118,8 @@ class LogisticRegression(GLM):
         Args:
             None
         Returns:
-            Dictionary of estimated coefficients. Keys are "fixed_effects" and one key for each grouping factor
+            Dictionary of estimated coefficients. Keys are "fixed_effects"
+                and one key for each grouping factor
         """
         LOGGER.info("extracting coefficients")
         main_coefs = pd.DataFrame({'variable': self.main_effects,
@@ -134,31 +145,43 @@ class LogisticRegression(GLM):
 
             idx = g + '_idx'
             coefs[idx] = np.arange(len(coefs)) / len(self.groupings[g])
-            coefs['inter_idx'] = np.mod(np.arange(len(coefs)), len(self.groupings[g]))
+            coefs['inter_idx'] = np.mod(np.arange(len(coefs)),
+                                        len(self.groupings[g]))
 
-            coefs = coefs.merge(self.inter_maps[g], on='inter_idx').merge(self.level_maps[g], on=idx)
+            coefs = coefs.merge(self.inter_maps[g], on='inter_idx').\
+                merge(self.level_maps[g], on=idx)
             groupings_coefs[g] = coefs
 
         # start merging all of the coefficients together
         merged_coefs = main_coefs
         for g in groupings_coefs:
-            merged_coefs = merged_coefs.merge(groupings_coefs[g], on='variable', how='right', suffixes=('_1', '_2'))
+            merged_coefs = merged_coefs.merge(groupings_coefs[g],
+                                              on='variable',
+                                              how='right',
+                                              suffixes=('_1', '_2'))
             try:
-                merged_coefs['value'] = merged_coefs['value'] + merged_coefs['inter_value']
+                merged_coefs['value'] = merged_coefs['value'] + \
+                        merged_coefs['inter_value']
             except KeyError:
-                merged_coefs['value'] = merged_coefs['value'] + merged_coefs['inter_value_2']
+                merged_coefs['value'] = merged_coefs['value'] + \
+                        merged_coefs['inter_value_2']
 
         # do some wrangling to get the pivot to work correctly
         cols = self.grouping_factors
         cols.extend(['variable', 'value'])
         merged_coefs = merged_coefs[cols]
-        index = range(np.product(self.num_levels.values())) * merged_coefs.variable.nunique()
+        index = range(np.product(self.num_levels.values())) * \
+            merged_coefs.variable.nunique()
         merged_coefs['index'] = index
 
-        pivoted_merged_coefs = merged_coefs.pivot(index='index', columns='variable', values='value').reset_index()
+        pivoted_merged_coefs = merged_coefs.pivot(index='index',
+                                                  columns='variable',
+                                                  values='value').reset_index()
         del pivoted_merged_coefs.index.name
         pivoted_merged_coefs.columns.name = None
-        self.results = pivoted_merged_coefs.merge(merged_coefs, on='index', how='left').drop(
+        self.results = pivoted_merged_coefs.merge(merged_coefs,
+                                                  on='index',
+                                                  how='left').drop(
             ['variable', 'value', 'index'], axis=1)
 
         # Add in columns that are main effects but not interaction effects
@@ -166,8 +189,10 @@ class LogisticRegression(GLM):
         main_cols = main_coefs['variable'].unique()
         vars_to_add = list(set(main_cols) - set(inter_cols))
         for v in vars_to_add:
-            LOGGER.info("%s is a main effect but not an interaction effect. Adding it to the results now", v)
-            self.results[v] = float(main_coefs.value[main_coefs['variable'] == v])
+            LOGGER.info("%s is a main effect but not an interaction effect." +
+                        "Adding it to the results now", v)
+            self.results[v] = main_coefs.value[main_coefs['variable'] == v]
+            self.results[v] = self.results[v].astype(float)
 
     def predict(self, new_df):
         """ Use estimated coefficients to make predictions on new data
