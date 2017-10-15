@@ -6,7 +6,6 @@ from diamond.glms.glm import GLM
 from diamond.solvers.diamond_logistic import FixedHessianSolverMulti
 from diamond.solvers.utils import custom_block_diag
 from scipy.special import expit
-from solvers.utils import dot
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
@@ -39,8 +38,8 @@ class LogisticRegression(GLM):
             None
         """
         LOGGER.info("creating Hessians")
-        H_main = 0.25 * np.array(dot(self.main_design.T,
-                                     self.main_design).todense())
+        H_main = np.array(self.main_design.T.dot(self.main_design).todense())
+        H_main *= 0.25
         # do a pseudoinverse for the main effects because they are
         # unregularized and could be constant columns
         self.H_main_inv = np.linalg.pinv(H_main)
@@ -61,7 +60,7 @@ class LogisticRegression(GLM):
                     LOGGER.info("blocks inverted: %i of %i", k, q)
                 block = H_inter[(k * block_length):((k + 1) * block_length),
                                 (k * block_length):((k + 1) * block_length)]
-                block = np.array(block.to_dense())
+                block = np.array(block.todense())
                 iblk = np.linalg.inv(block + self.sparse_inv_covs[g]._block)
                 inv_blocks.append(iblk)
 
