@@ -31,7 +31,7 @@ class TestCumulativeLogistic(unittest.TestCase):
                                                   copy=True,
                                                   test_df=None)
         logging.info("Fitting model in diamond")
-        results = self.model.fit(self.formula, tol=1e-3, max_its=5, verbose=False)
+        results = self.model.fit(self.formula, tol=1e-3, max_its=5, verbose=True)
 
         # the format of the coefficient vector is:
         # fixed effects, then [random intercept, random slope] for each level
