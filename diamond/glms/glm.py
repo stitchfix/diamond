@@ -15,7 +15,8 @@ LOGGER.setLevel(logging.INFO)
 
 class GLM(object):
     """
-    Binary or cumulative logistic regression model with arbitrary crossed random effects and known covariance
+    Binary or cumulative logistic regression model with arbitrary
+    crossed random effects and known covariance
     """
     __metaclass__ = abc.ABCMeta
 
@@ -23,13 +24,17 @@ class GLM(object):
         r""" Initialize a diamond model
 
         Args:
-            train_df (DataFrame): DataFrame to estimate the model parameters with
+            train_df (DataFrame): DataFrame to estimate the model parameters
             priors_df (DataFrame): Covariance matrix to use for regularization.
                 Format is | group | var1 | var2 | vcov |
-                where group represents the grouping factor, var1 and var2 specify the row and column of the covariance matrix,
-                and vcov is a scalar for that entry of the covariance matrix. Note that if var2 is NULL, vcov is
-                interpreted as the diagonal element of the covariance matrix for var1
-            copy (boolean): Make a copy of train_df. If False, new columns will be created and the index will be reset.
+                where group represents the grouping factor, var1 and var2
+                    specify the row and column of the covariance matrix,
+                and vcov is a scalar for that entry of the covariance matrix.
+                    Note that if var2 is NULL, vcov is
+                    interpreted as the diagonal element of the covariance
+                    matrix for var1
+            copy (boolean): Make a copy of train_df. If False, new columns
+                will be created and the index will be reset.
             test_df (DataFrame): This is used to make predictions.
         Returns:
             Object (GLM)
@@ -71,10 +76,12 @@ class GLM(object):
         self.obj_fun = None
 
     def initialize(self, formula, **kwargs):
-        r""" Get ready to fit the model by parsing the formula, checking priors, and creating design, penalty, and Hessian matrices
+        r""" Get ready to fit the model by parsing the formula,
+        checking priors, and creating design, penalty, and Hessian matrices
 
         Args:
-            formula (string): R-style formula expressing the model to fit. eg. :math:`y \sim 1 + x + (1 + x | group)`
+            formula (string): R-style formula expressing the model to fit.
+                eg. :math:`y \sim 1 + x + (1 + x | group)`
         Keyword Args:
             kwargs: additional arguments to pass to fit method
         """
@@ -132,8 +139,8 @@ class GLM(object):
             }
 
         required_covs = {
-            g: [[v, np.nan] for i, v in enumerate(f) if not isinstance(v, float)]
-            for g, f in iteritems(_groupings)
+            g: [[v, np.nan] for i, v in enumerate(f)
+                if not isinstance(v, float)] for g, f in iteritems(_groupings)
             }
 
         example_priors_data = {
@@ -164,7 +171,8 @@ class GLM(object):
 
             var_pair = [var1, var2]
 
-            num_matches = sum([np.array_equal(var_pair, p) for p in allowed_covs[group]])
+            num_matches = sum([np.array_equal(var_pair, p)
+                               for p in allowed_covs[group]])
             if num_matches != 1:
                 raise AssertionError("""There is a row in your priors_df which is not expected.
                 Unexpected row: {}
@@ -180,7 +188,8 @@ class GLM(object):
                 pass
 
         # loop through the required_covs and make sure none are remaining
-        remaining_required_covs = sum([len(f) for _, f in iteritems(required_covs)])
+        remaining_required_covs = sum([len(f)
+                                       for _, f in iteritems(required_covs)])
         if remaining_required_covs > 0:
             raise AssertionError("""Priors_df is missing some required rows.
             If you want an unregularized random effect, include it as a fixed
@@ -193,26 +202,31 @@ class GLM(object):
     @staticmethod
     def _check_formula(formula):
         """
-        Check that the formula contains all necessary ingredients, such as a response and at least one group
+        Check that the formula contains all necessary ingredients,
+            such as a response and at least one group
         Args:
-            formula (string): R-style formula expressing the model to fit. eg. "y ~ 1 + x + (1 + x | group)"
+            formula (string): R-style formula expressing the model to fit.
+                eg. "y ~ 1 + x + (1 + x | group)"
         Returns:
             None
         """
         valid_formula_str = """
         A valid formula looks like:
-            response ~ 1 + feature1 + feature2 + ... + (1 + feature1 + feature2 + ... | doctor_id)
+            response ~ 1 + feature1 + feature2 + ... +
+            (1 + feature1 + feature2 + ... | doctor_id)
         """
         if "~" not in formula:
-            raise AssertionError("Formula missing '~'. You need a response. {}".format(valid_formula_str))
+            msg = "Formula missing '~'. You need a response. {}"
+            raise AssertionError(msg.format(valid_formula_str))
         if "|" not in formula:
-            raise AssertionError("Formula missing '|'. You need at least 1 group. {}".format(valid_formula_str))
-
+            msg = "Formula missing '|'. You need at least 1 group. {}"
+            raise AssertionError(msg.format(valid_formula_str))
 
     def _parse_formula(self, formula):
         """
         Args:
-            formula (string): R-style formula expressing the model to fit. eg. "y ~ 1 + x + (1 + x | group)"
+            formula (string): R-style formula expressing the model to fit.
+                eg. "y ~ 1 + x + (1 + x | group)"
         Returns:
             None
         """
@@ -250,14 +264,16 @@ class GLM(object):
 
     def _create_penalty_matrix(self):
         """
-        Take the provided covariance matrices and transform it into an L2 penalty matrix
+        Take the provided covariance matrices and transform it
+            into an L2 penalty matrix
         Args:
             None
         Returns:
             None
         """
         self.variances = self.priors_df
-        self.variances.ix[self.variances['var1'] == '(Intercept)', 'var1'] = 'intercept'
+        self.variances.ix[self.variances['var1'] == '(Intercept)', 'var1'] = \
+            'intercept'
         LOGGER.info("creating covariance matrix")
 
         # if "group" is a column in the variances, rename it to "grp"
@@ -279,14 +295,16 @@ class GLM(object):
                         cov_mat[i, j] = row[1]['vcov']
                         cov_mat[j, i] = row[1]['vcov']
                 inv_covs[g] = np.linalg.inv(cov_mat)
-                self.sparse_inv_covs[g] = RepeatedBlockDiagonal(inv_covs[g], self.num_levels[g])
+                self.sparse_inv_covs[g] = \
+                    RepeatedBlockDiagonal(inv_covs[g], self.num_levels[g])
         self.sparse_inv_covs['main'] = None
 
     def _create_main_design(self, **kwargs):
         r"""
         Create design matrix for main effects
         Keyword Args:
-            * *df* (``DataFrame``). specify a new dataframe to create design matrix from
+            * *df* (``DataFrame``). specify a new dataframe to create
+                design matrix from
         Returns:
             array_like: design matrix in sparse CSR format
 
@@ -295,7 +313,6 @@ class GLM(object):
         df.reset_index(drop=True, inplace=True)
         df['row_index'] = df.index
         df['intercept'] = 1.0  # assume intercept is always included
-        # although having this extra column doesn't hurt if intercept is not included
 
         id_cols = ['row_index']
 
@@ -305,20 +322,25 @@ class GLM(object):
         row = melted_df.row_index
         col = melted_df.col_index
         data = melted_df.value
-        return sparse.coo_matrix((data, (row, col)), shape=(max(row) + 1, max(col) + 1)).tocsr()
+        return sparse.coo_matrix((data, (row, col)),
+                                 shape=(max(row) + 1, max(col) + 1)).tocsr()
 
     def _create_inter_design(self, g, **kwargs):
         r"""
         Create random effects design matrix for grouping factor g
-        This is straightforward when you create the matrix using the training DataFrame
-        But a new DataFrame can have new levels of g which did not exist in training DF
+        This is straightforward when you create the matrix using the training
+            DataFrame
+        But a new DataFrame can have new levels of g which did not exist in
+            training DF
         For these levels, the random coefficients are set to zero
-        But as a practical matter, it's easier to zero out the values of the predictors
+        But as a practical matter, it's easier to zero out the values of the
+            predictors
         here than it is to modify the fitted coefficient vector
         Args:
             g (string): grouping factor to create design matrix
         Keyword Args:
-            * *df* (``DataFrame``). specify a new dataframe to create design matrix from
+            * *df* (``DataFrame``). specify a new dataframe to create
+                design matrix from
         Returns:
             array_like : design matrix in sparse CSR format
         """
@@ -332,10 +354,12 @@ class GLM(object):
 
         id_cols = [g, 'row_index']
 
+        # level_maps has levels of g and an index for each level
         melted_inter = pd.melt(df[id_cols + self.groupings[g]], id_cols).merge(
-            self.level_maps[g], how='left', on=g).merge(  # level_maps has levels of g and an index for each level
+            self.level_maps[g], how='left', on=g).merge(
             self.inter_maps[g], how='inner', on='variable')
-        # inter_maps has variables in formula for this grouping factor, plus indexes
+        # inter_maps has variables in formula for this grouping factor,
+        # plus indexes
         # because of the above left join, some idx values are NULL
         # but we need to keep the row indexes
         nrows = max(melted_inter.row_index) + 1
@@ -343,7 +367,8 @@ class GLM(object):
         melted_inter.dropna(inplace=True)
 
         melted_inter.sort_values(by=[g, idx], inplace=True)
-        melted_inter['col_index'] = melted_inter[idx] * len(self.groupings[g]) + melted_inter['inter_idx']
+        melted_inter['col_index'] = melted_inter['inter_idx'] + \
+            melted_inter[idx] * len(self.groupings[g])
 
         row = melted_inter.row_index
         col = melted_inter.col_index
@@ -351,12 +376,14 @@ class GLM(object):
 
         if g in self.grouping_designs.keys():
             # this means training matrix was already created for this group
-            # reuse the same shape: indices are lined up, everything else will be 0 b/c of sparse matrix
+            # reuse the same shape: indices are lined up,
+            # everything else will be 0 b/c of sparse matrix
             ncols = self.grouping_designs[g].shape[1]
         else:
             ncols = max(col) + 1
 
-        return sparse.coo_matrix((data, (row, col)), shape=(nrows, ncols)).tocsr()
+        return sparse.coo_matrix((data, (row, col)),
+                                 shape=(nrows, ncols)).tocsr()
 
     def _create_design_matrix(self):
         """
@@ -371,12 +398,15 @@ class GLM(object):
         # Create some dataframes to help with indexing
         for g in self.groupings.keys():
             idx = g + '_idx'
-            self.level_maps[g] = pd.DataFrame({g: np.unique(self.train_df[g]),
-                                               idx: np.arange(self.num_levels[g])})
-            self.inter_maps[g] = pd.DataFrame({'variable': self.groupings[g],
-                                               'inter_idx': np.arange(len(self.groupings[g]))})
-        self.main_map = pd.DataFrame({'variable': self.main_effects,
-                                      'main_idx': np.arange(len(self.main_effects))})
+            self.level_maps[g] = pd.DataFrame({
+                g: np.unique(self.train_df[g]),
+                idx: np.arange(self.num_levels[g])})
+            self.inter_maps[g] = pd.DataFrame({
+                'variable': self.groupings[g],
+                'inter_idx': np.arange(len(self.groupings[g]))})
+        self.main_map = pd.DataFrame({
+            'variable': self.main_effects,
+            'main_idx': np.arange(len(self.main_effects))})
 
         LOGGER.info("creating main design matrix")
         # Compute indices (row_index, col_index) into sparse design matrix
@@ -400,18 +430,31 @@ class GLM(object):
         for g in self.groupings.keys():
             coefs = pd.DataFrame({'inter_value': self.effects[g]})
             idx = g + '_idx'
-            coefs[idx] = np.arange(len(coefs)) / len(self.groupings[g])
-            coefs['inter_idx'] = np.mod(np.arange(len(coefs)), len(self.groupings[g]))
-            coefs = coefs.merge(self.inter_maps[g], on='inter_idx').merge(self.level_maps[g], on=idx)
+            coefs[idx] = np.arange(len(coefs)) // len(self.groupings[g])
+            # repeat each index self.groupings[g] times
+            # e.g. [0, 0, 1, 1, ...]
+            # index = [i for i in range(len(coefs) //)
+            #               for j in range(len(self.groupings[g]))]
+            # coefs[idx] = [i for i in self.group_levels[g]
+            #               for j in range(len(self.groupings[g]))]
+
+            coefs['inter_idx'] = np.mod(np.arange(len(coefs)),
+                                        len(self.groupings[g]))
+            coefs = coefs.merge(self.inter_maps[g], on='inter_idx').\
+                merge(self.level_maps[g], on=idx)
             groupings_coefs[g] = coefs
             # make the individual entries in self.results_dict
-            _df = coefs.pivot(index=g, columns='variable', values='inter_value').reset_index()
+            _df = coefs.pivot(index=g,
+                              columns='variable',
+                              values='inter_value').reset_index()
             del _df.index.name
             _df.columns.name = None
             self.results_dict[g] = _df
 
     def predict(self, new_df):
-        r""" Obtain predictions from a fitted diamond object. New levels of grouping factors are given fixed effects, with zero random effects
+        r""" Obtain predictions from a fitted diamond object.
+        New levels of grouping factors are given fixed effects,
+        with zero random effects
 
         Args:
             new_df (DataFrame):  data to make predictions on
