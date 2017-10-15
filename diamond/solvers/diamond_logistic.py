@@ -69,8 +69,11 @@ class FixedHessianSolverMulti(object):
 
             change = 0.0
             for grouping in fit_order:
-                g_change = np.linalg.norm(effects[grouping] - old_effects[grouping]) / \
-                           np.linalg.norm(effects[grouping])
+                if i > 0:
+                    g_change = np.linalg.norm(effects[grouping] - old_effects[grouping]) / \
+                               np.linalg.norm(effects[grouping])
+                else:
+                    g_change = np.inf
                 # if g_change < tol and i >= min_its:
                 #     # no need to continue converging this group
                 #     # cutoff
