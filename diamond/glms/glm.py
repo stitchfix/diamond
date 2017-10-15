@@ -430,14 +430,9 @@ class GLM(object):
         for g in self.groupings.keys():
             coefs = pd.DataFrame({'inter_value': self.effects[g]})
             idx = g + '_idx'
-            coefs[idx] = np.arange(len(coefs)) // len(self.groupings[g])
             # repeat each index self.groupings[g] times
             # e.g. [0, 0, 1, 1, ...]
-            # index = [i for i in range(len(coefs) //)
-            #               for j in range(len(self.groupings[g]))]
-            # coefs[idx] = [i for i in self.group_levels[g]
-            #               for j in range(len(self.groupings[g]))]
-
+            coefs[idx] = np.arange(len(coefs)) // len(self.groupings[g])
             coefs['inter_idx'] = np.mod(np.arange(len(coefs)),
                                         len(self.groupings[g]))
             coefs = coefs.merge(self.inter_maps[g], on='inter_idx').\
