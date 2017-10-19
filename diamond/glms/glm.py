@@ -188,8 +188,7 @@ class GLM(object):
                 pass
 
         # loop through the required_covs and make sure none are remaining
-        remaining_required_covs = sum([len(f)
-                                       for _, f in iteritems(required_covs)])
+        remaining_required_covs = sum([len(f) for _, f in iteritems(required_covs)])
         if remaining_required_covs > 0:
             raise AssertionError("""Priors_df is missing some required rows.
             If you want an unregularized random effect, include it as a fixed
@@ -272,8 +271,7 @@ class GLM(object):
             None
         """
         self.variances = self.priors_df
-        self.variances.ix[self.variances['var1'] == '(Intercept)', 'var1'] = \
-            'intercept'
+        self.variances.ix[self.variances['var1'] == '(Intercept)', 'var1'] = 'intercept'
         LOGGER.info("creating covariance matrix")
 
         # if "group" is a column in the variances, rename it to "grp"
