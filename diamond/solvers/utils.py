@@ -76,7 +76,7 @@ def l2_logistic_fixed_hessian(X,
     if penaltysq is None:
         penaltysq = np.zeros((X.shape[1], X.shape[1]))
 
-    for i in xrange(max_its):
+    for i in range(max_its):
 
         old_beta = 1.0 * beta
 
@@ -113,7 +113,7 @@ def custom_block_diag(blocks):
     m = np.arange(_data[0].shape[0])
 
     flat_data = np.zeros(L * len(m))
-    for n in xrange(L):
+    for n in range(L):
         flat_data[m + n * len(m)] = _data[n][m]
 
     # now make the block diagonal array
@@ -142,7 +142,7 @@ def l2_clogistic_llh(X, Y, alpha, beta, penalty_matrix, offset):
     obj = 0.0
     J = Y.shape[1]
     Xb = dot(X, beta) + offset
-    for j in xrange(J):
+    for j in range(J):
         if j == 0:
             obj += dot(np.log(expit(alpha[j] + Xb)), Y[:, j])
         elif j == J - 1:
@@ -224,7 +224,7 @@ def _l2_clogistic_gradient_IL(X, alpha, beta, offset=None, **kwargs):
     Returns:
         array_like. n x J-1 matrix where entry i,j is the inverse logit of (alpha[j] + X[i, :] * beta)
     """
-    J = len(alpha) + 1L
+    J = len(alpha) + 1
     if X is None:
         n = kwargs.get("n")
     else:
@@ -233,8 +233,8 @@ def _l2_clogistic_gradient_IL(X, alpha, beta, offset=None, **kwargs):
         Xb = 0.
     else:
         Xb = dot(X, beta) + (0 if offset is None else offset)
-    IL = np.zeros((n, J - 1L))
-    for j in xrange(J - 1L):
+    IL = np.zeros((n, J - 1))
+    for j in range(J - 1):
         IL[:, j] = expit(alpha[j] + Xb)
     return IL
 
@@ -251,8 +251,8 @@ def _l2_clogistic_gradient_intercept(IL, Y, alpha):
     """
     exp_int = np.exp(alpha)
     grad_alpha = np.zeros(len(alpha))
-    J = len(alpha) + 1L
-    for j in xrange(J - 1):  # intercepts
+    J = len(alpha) + 1
+    for j in range(J - 1):  # intercepts
         # there are J levels, and J-1 intercepts
         # indexed from 0 to J-2
         if j == 0:
@@ -282,7 +282,7 @@ def _l2_clogistic_gradient_slope(X, Y, IL, beta, penalty_matrix):
     grad_beta = np.zeros(len(beta))
     J = Y.shape[1]
     XT = X.transpose()  # CSC format
-    for j in xrange(J):  # coefficients
+    for j in range(J):  # coefficients
         if j == 0:
             grad_beta = dot(XT, Y[:, j] * (1.0 - IL[:, j]))
         elif j < J - 1:
@@ -373,7 +373,7 @@ def _l2_clogistic_hessian_ILL(X, alpha, beta, **kwargs):
     else:
         Xb = dot(X, beta) + (0 if offset is None else offset)
     ILL = np.zeros((X.shape[0], len(alpha)))
-    for j in xrange(len(alpha)):
+    for j in range(len(alpha)):
         ILL[:, j] = np.exp(alpha[j] + Xb) * (1.0 + np.exp(alpha[j] + Xb)) ** -2.0
     return ILL
 
@@ -391,12 +391,12 @@ def _l2_clogistic_hessian_intercept(X, Y, ILL, alpha):
         array_like. Matrix of second derivatives of main effects and intercepts
     """
     exp_int = np.exp(alpha)
-    J = len(alpha) + 1L
-    p = X.shape[1] if X is not None else 0L
-    hess_alpha = np.zeros((p + J - 1L, p + J - 1L))
+    J = len(alpha) + 1
+    p = X.shape[1] if X is not None else 0
+    hess_alpha = np.zeros((p + J - 1, p + J - 1))
 
     # important to initialize hess to 0. this covers the non-adjacent intercepts
-    for j in xrange(J - 1):
+    for j in range(J - 1):
         if j == 0:
             hess_alpha[j, j] = -dot(Y[:, j], ILL[:, j]) -\
                                np.dot(Y[:, j + 1], (exp_int[j] * exp_int[j + 1]) / (exp_int[j + 1] - exp_int[j]) ** 2.0 + ILL[:, j])
@@ -407,13 +407,13 @@ def _l2_clogistic_hessian_intercept(X, Y, ILL, alpha):
             hess_alpha[j, j] = -dot(Y[:, j], (exp_int[j] * exp_int[j - 1]) / (exp_int[j] - exp_int[j - 1]) ** 2.0 + ILL[:, j]) - \
                                dot(Y[:, j + 1], ILL[:, j])
 
-    for j in xrange(J - 2):
+    for j in range(J - 2):
         # non-adjacent intercepts have zero mixed partial derivatives
         hess_alpha[j, j + 1] = sum(Y[:, j + 1]) * exp_int[j] * exp_int[j + 1] / (exp_int[j + 1] - exp_int[j]) ** 2.0
         hess_alpha[j + 1, j] = hess_alpha[j, j + 1]  # symmetric
 
     if X is not None:  # \partial \alpha_j, \partial \beta
-        for j in xrange(J - 1):
+        for j in range(J - 1):
             hess_alpha[j, (J - 1):] = -dot(X.transpose(), ILL[:, j] * (Y[:, j] + Y[:, j + 1]))
             hess_alpha[(J - 1):, j] = hess_alpha[j, (J - 1):]  # symmetric
 
@@ -434,17 +434,17 @@ def _l2_clogistic_hessian_slope(X, Y, ILL, penalty_matrix, value=True):
         either the true Hessian if value=True, or a sparse diagonal matrix for downstream use
     """
     n = Y.shape[0]
-    J = ILL.shape[1] + 1L
+    J = ILL.shape[1] + 1
 
     D = Y[:, 0] * ILL[:, 0]  # initialization
-    for j in xrange(1, J):
+    for j in range(1, J):
         if j < J - 1:
             D += Y[:, j] * (ILL[:, j] + ILL[:, j - 1])
         else:
             D += Y[:, j] * ILL[:, j - 1]
 
     # make an n x n diagonal matrix whose diagonal is D, off-diagonal is 0
-    DD = sparse.csr_matrix((D, (range(n), xrange(n))), shape=(n, n))
+    DD = sparse.csr_matrix((D, (range(n), range(n))), shape=(n, n))
     if value:
         return X.transpose().dot(DD.dot(X)) + penalty_matrix  # SLOW
     else:
@@ -473,11 +473,11 @@ def l2_clogistic_ranef(X, Y, alpha, beta, penalty_matrix, offset, LU, **kwargs):
         Updated parameter vector `beta`
     """
 
-    min_its = kwargs.get('min_its', 2L)
-    max_its = kwargs.get('max_its', 200L)
+    min_its = kwargs.get('min_its', 2)
+    max_its = kwargs.get('max_its', 200)
     tol = kwargs.get('tol', 1e-3)
 
-    for i in xrange(max_its):
+    for i in range(max_its):
 
         old_beta = beta.copy()
         grad = l2_clogistic_gradient(X, Y, intercept=False, alpha=alpha, beta=beta,
@@ -529,13 +529,13 @@ def l2_clogistic_fixef(X, Y, **kwargs):
         offset = None
 
     J = Y.shape[1]
-    min_its = kwargs.get('min_its', 2L)
-    max_its = kwargs.get('max_its', 200L)
+    min_its = kwargs.get('min_its', 2)
+    max_its = kwargs.get('max_its', 200)
     tol = kwargs.get('tol', 1e-3)
-    alpha = kwargs.get('alpha', np.linspace(-1, 1, J - 1L))
+    alpha = kwargs.get('alpha', np.linspace(-1, 1, J - 1))
     penalty_matrix = kwargs.get('penalty_matrix', sparse.csr_matrix((p, p)))
 
-    for i in xrange(max_its):
+    for i in range(max_its):
         old_alpha = 1.0 * alpha
         old_beta = 1.0 * beta if beta is not None else None
 

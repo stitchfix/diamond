@@ -54,7 +54,7 @@ class FixedHessianSolverCumulative(object):
         start_time = time.time()
         old_effects = {k: effects[k] for k in inter_designs}
 
-        for i in xrange(max_its):
+        for i in range(max_its):
             change = 0.0
             # first, do the fixed effects
             LOGGER.info("Starting to fit fixed effects")
@@ -71,8 +71,11 @@ class FixedHessianSolverCumulative(object):
                 offset += dot(main_design, main_effects)
             for grouping in H_inter_LUs:
                 LOGGER.info("Starting to fit %s", grouping)
-                g_change = np.linalg.norm(effects[grouping] - old_effects[grouping]) / \
-                           np.linalg.norm(effects[grouping])
+                if i > 0:
+                    g_change = np.linalg.norm(effects[grouping] - old_effects[grouping]) / \
+                               np.linalg.norm(effects[grouping])
+                else:
+                    g_change = np.inf
                 if g_change < inner_tol and i >= min_its:
                     LOGGER.info("Group %s has already converged, skipping it", grouping)
                     continue

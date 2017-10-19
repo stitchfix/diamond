@@ -13,12 +13,14 @@ extensions = [
 
 setup(
     name='diamond',
-    version='0.1.1',
+    version='0.2.1',
     author=['Aaron Bradley', 'Timothy Sweetser'],
+    url='http://github.com/stitchfix/diamond',
     author_email=['abradley@stitchfix.com', 'tsweetser@stitchfix.com'],
     packages=find_packages(),
     install_requires=['numpy',
                       'scipy',
+                      'future',
                       'pandas',
                       'cython'],
     license='MIT License',

@@ -36,7 +36,7 @@ class TestFiniteDifference(unittest.TestCase):
             offset=self.solver.grouping_designs["judge"].dot(self.results["judge"]["intercept"].values)
         )
 
-        for i in xrange(len(grad)):
+        for i in range(len(grad)):
             delta = np.zeros(len(grad))
             delta[i] = h
 
@@ -76,7 +76,7 @@ class TestFiniteDifference(unittest.TestCase):
         # so restrict to just the random effects
         grad = grad[4:]
 
-        for i in xrange(len(grad)):
+        for i in range(len(grad)):
             delta = np.zeros(len(grad))
             delta[i] = h
 
@@ -125,10 +125,10 @@ class TestFiniteDifference(unittest.TestCase):
                                    penalty_matrix=PI)
             return -1 * llh
 
-        for i in xrange(6):
+        for i in range(6):
             delta = np.zeros(6)
             delta[i] = h
-            for j in xrange(6):
+            for j in range(6):
                 gamma = np.zeros(6)
                 gamma[j] = h
                 # finite difference formula from
@@ -165,10 +165,10 @@ class TestFiniteDifference(unittest.TestCase):
                                    penalty_matrix=self.solver.sparse_inv_covs["judge"].sparse_matrix)
             return -1 * llh
 
-        for i in xrange(len(beta)):
+        for i in range(len(beta)):
             delta = np.zeros(len(beta))
             delta[i] = h
-            for j in xrange(len(beta)):
+            for j in range(len(beta)):
                 gamma = np.zeros(len(beta))
                 gamma[j] = h
 

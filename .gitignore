@@ -10,3 +10,4 @@ diamond.egg-info/
 dist/
 build/
 *.csv
+*.bak
