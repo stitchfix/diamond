@@ -51,7 +51,7 @@ class LogisticRegression(GLM):
 
             q = len(self.level_maps[g])
             inv_blocks = []
-            block_length = H_inter.shape[0] / q
+            block_length = H_inter.shape[0] // q
 
             for k in range(q):
                 if k % 100000 == 0:
