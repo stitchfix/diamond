@@ -12,7 +12,7 @@ extensions = [
 ]
 
 setup(
-    name='SFDiamond',
+    name='sf-diamond',
     version='0.2.2',
     author=['Aaron Bradley', 'Timothy Sweetser'],
     url='http://github.com/stitchfix/diamond',
