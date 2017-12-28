@@ -23,6 +23,8 @@ You must have [docker](https://docs.docker.com/engine/installation/) installed. 
 
 Copy-paste the URL, including the token, into your browser. Then, check out the Jupyter notebook examples!
 
+You can also install from PyPI via `pip install sf-diamond`
+
 ## Troubleshooting installation
 * You may need to restart docker if you've been running jupyter notebooks locally on port 8888.
 
