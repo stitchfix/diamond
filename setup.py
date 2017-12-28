@@ -12,8 +12,8 @@ extensions = [
 ]
 
 setup(
-    name='diamond',
-    version='0.2.1',
+    name='sf-diamond',
+    version='0.2.2',
     author=['Aaron Bradley', 'Timothy Sweetser'],
     url='http://github.com/stitchfix/diamond',
     author_email=['abradley@stitchfix.com', 'tsweetser@stitchfix.com'],
@@ -23,7 +23,8 @@ setup(
                       'future',
                       'pandas',
                       'cython'],
-    license='MIT License',
+    license='LICENSE.txt',
     description='GLMMs with known variances in python with Newton-like solver',
+    long_description=open('README.rst').read(),
     ext_modules=cythonize(extensions)
 )

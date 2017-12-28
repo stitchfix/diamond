@@ -1,0 +1,1 @@
+v0.2.2, December 13 2017 -- First release on PyPI
