@@ -1,0 +1,16 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: tsweetser/diamond:latest
+    steps:
+      - checkout
+      - run:
+          command: |
+            python3.6 -m venv venv
+            . venv/bin/activate
+            pip3.6 install -e .
+      - run:
+          command: |
+            . venv/bin/activate
+            nosetests
