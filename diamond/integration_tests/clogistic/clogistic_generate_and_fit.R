@@ -1,13 +1,14 @@
 # Integration test
 # simulate data according to
 # cumulative logit  model
-# Agresti, 2nd Ed, p 275, eqn (7.5) 
+# Agresti, 2nd Ed, p 275, eqn (7.5)
 # fit priors using ordinal
 # learn parameters using diamond
 # measure discrepancy between true parameters and diamond estimates
 library(ordinal)
-library(dplyr)
 library(logging); basicConfig()
+# library(MASS)
+# library(MCMCpack)
 
 
 set.seed(636)
@@ -38,7 +39,7 @@ X[, 2] <- rnorm(n=nrow(X))  # for random slopes
 loginfo("Creating design matrix")
 for (i in 1:ngroups) {
     row_start <- 1 + ifelse(i==1, 0, sum(n[1:(i-1)]))
-    row_end <- row_start + n[i] - 1 
+    row_end <- row_start + n[i] - 1
     X[row_start:row_end, (2*i + 1) :(2*i + 2)] <- X[row_start:row_end, 1:2]
 }
 
@@ -65,9 +66,8 @@ df_priors <- VarCorr(m)[[1]]
 colnames(df_priors) <- gsub("(Intercept)", "intercept", colnames(df_priors), fixed=TRUE)
 rownames(df_priors) <- gsub("(Intercept)", "intercept", rownames(df_priors), fixed=TRUE)
 
-df_priors <- reshape2::melt(df_priors) %>%
-             mutate(group="level") %>%
-             rename_("vcov"="value")
+df_priors <- reshape2::melt(df_priors, value.name='vcov')
+df_priors[['group']] <- 'level'
 colnames(df_priors) <- tolower(colnames(df_priors))
 df_priors[df_priors[["var1"]] == df_priors[["var2"]], "var2"] <- NA
 df_priors <- df_priors[-2, c("group", "var1", "var2", "vcov")]
@@ -76,4 +76,4 @@ df_priors <- df_priors[-2, c("group", "var1", "var2", "vcov")]
 write.csv(df, "diamond/integration_tests/clogistic/simulated_clogistic_df.csv", row.names=FALSE)
 write.csv(vec_beta, "diamond/integration_tests/clogistic/simulated_clogistic_true_parameters.csv", row.names=FALSE)
 write.csv(intercepts, "diamond/integration_tests/clogistic/simulated_clogistic_true_intercepts.csv", row.names=FALSE)
-write.csv(df_priors, "diamond/integration_tests/clogistic/simulated_clogistic_covariance.csv", row.names=FALSE)               
+write.csv(df_priors, "diamond/integration_tests/clogistic/simulated_clogistic_covariance.csv", row.names=FALSE)

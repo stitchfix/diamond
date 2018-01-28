@@ -5,8 +5,10 @@
 # learn parameters using diamond
 # measure discrepancy between true parameters and diamond estimates
 library(lme4)
-library(dplyr)
 library(logging); basicConfig()
+# library(MASS)
+# library(MCMCpack)
+inv_logit <- function(x) 1 / (1 + exp(-x))
 
 
 set.seed(893)
@@ -35,13 +37,13 @@ X[, 2] <- rnorm(n=nrow(X))
 loginfo("Creating design matrix")
 for (i in 1:ngroups) {
     row_start <- 1 + ifelse(i==1, 0, sum(n[1:(i-1)]))
-    row_end <- row_start + n[i] - 1 
+    row_end <- row_start + n[i] - 1
     X[row_start:row_end, (2*i + 1) :(2*i + 2)] <- X[row_start:row_end, 1:2]
 }
 
 loginfo("With these, simulating binary responses")
-vec_beta <- c(fixef, c(rbind(ranef[, 1], ranef[, 2]))) 
-p <- gtools::inv.logit(X %*% vec_beta)
+vec_beta <- c(fixef, c(rbind(ranef[, 1], ranef[, 2])))
+p <- inv_logit(X %*% vec_beta)
 y <- rbinom(n=nrow(X), size=1, prob=p)
 
 df <- data.frame("x"=X[, 2], "y"=y, "level"=rep(1:ngroups, n))
@@ -49,9 +51,10 @@ loginfo("Fitting model in lme4")
 m <- lme4::glmer(y ~ 1 + x + (1 + x | level),
            data=df,
            family=binomial)
-df_priors <- rename(as.data.frame(VarCorr(m)), group=grp) %>%
-                   dplyr::select(., -sdcor)
-for (x in paste0("var", 1:2)) {               
+df_priors <- as.data.frame(VarCorr(m))
+df_priors[['group']] <- df_priors[['grp']]
+df_priors[c('sdcor', 'grp')] <- NULL
+for (x in paste0("var", 1:2)) {
     df_priors[[x]] <- gsub("(Intercept)", "intercept", df_priors[[x]], fixed=TRUE)
 }
 # make sure columns are in the right order
@@ -60,4 +63,4 @@ df_priors <- df_priors[, c("group", "var1", "var2", "vcov")]
 # assumes working directory is diamond/
 write.csv(df, "diamond/integration_tests/logistic/simulated_logistic_df.csv", row.names=FALSE)
 write.csv(vec_beta, "diamond/integration_tests/logistic/simulated_logistic_true_parameters.csv", row.names=FALSE)
-write.csv(df_priors, "diamond/integration_tests/logistic/simulated_logistic_covariance.csv", row.names=FALSE)               
+write.csv(df_priors, "diamond/integration_tests/logistic/simulated_logistic_covariance.csv", row.names=FALSE)
