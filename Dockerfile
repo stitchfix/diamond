@@ -7,7 +7,7 @@ apt-get install -y python3 gcc-4.9 tree python3-pip p7zip-full git r-base libssl
 RUN Rscript -e "install.packages('devtools', repos = 'https://cran.cnr.berkeley.edu/')"
 RUN Rscript -e "devtools::install_github('jyypma/nloptr')"
 RUN Rscript -e "z <- lapply(c('ordinal', 'lme4', 'reshape2', 'logging', 'MCMCpack'), install.packages, repos = 'https://cran.cnr.berkeley.edu/')"
-RUN pip3 install cython numpy pandas scipy jupyter seaborn nose
+RUN pip3 install cython numpy pandas scipy jupyter seaborn nose future
 
 # install diamond
 RUN git clone http://github.com/stitchfix/diamond.git && pip3 install -e diamond
