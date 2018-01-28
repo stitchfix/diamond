@@ -1,4 +1,5 @@
 # Diamond
+[![CircleCI](https://circleci.com/gh/stitchfix/diamond.svg?style=svg)](https://circleci.com/gh/stitchfix/diamond)
 
 ### O Diamond, Diamond, thou little knowest the mischief thou hast done.
 
