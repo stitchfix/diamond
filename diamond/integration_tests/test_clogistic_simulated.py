@@ -4,6 +4,7 @@ import pandas as pd
 from diamond.glms.cumulative_logistic import CumulativeLogisticRegression
 import os
 import logging
+from diamond.integration_tests.utils import run_r_script
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
@@ -12,14 +13,15 @@ LOGGER.setLevel(logging.INFO)
 class TestCumulativeLogistic(unittest.TestCase):
     def test_setUp(self, tol=0.02):
         # assumes working directory is diamond/
-        folder = "diamond/integration_tests/clogistic"
-        simulated_data_loc = "%s/simulated_clogistic_df.csv" % folder
-        estimated_covariance_loc = "%s/simulated_clogistic_covariance.csv" % folder
-        resources_exist = os.path.exists(simulated_data_loc) and os.path.exists(estimated_covariance_loc)
+        folder = 'diamond/integration_tests/clogistic'
+        simulated_data_loc = os.path.join(folder, 'simulated_clogistic_df.csv')
+        estimated_covariance_loc = os.path.join(folder, 'simulated_clogistic_covariance.csv')
+        resources_exist = os.path.exists(simulated_data_loc) and \
+            os.path.exists(estimated_covariance_loc)
         if not resources_exist:
-            logging.info("Simulating data and estimating covariances in R")
-            os.system("/usr/local/bin/Rscript %s/clogistic_generate_and_fit.R" % folder)
-        logging.info("Reading in training data and R::ordinal-estimated covariance matrix")
+            logging.info('Simulating data and estimating covariances in R')
+            run_r_script(os.path.join(folder, 'clogistic_generate_and_fit.R'))
+        logging.info('Reading in training data and R::ordinal-estimated covariance matrix')
 
         df_train = pd.read_csv(simulated_data_loc)
         df_estimated_covariance = pd.read_csv(estimated_covariance_loc)
