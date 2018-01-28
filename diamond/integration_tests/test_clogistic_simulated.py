@@ -11,9 +11,9 @@ LOGGER.setLevel(logging.INFO)
 
 
 class TestCumulativeLogistic(unittest.TestCase):
-    def test_setUp(self, tol=0.02):
+    def setUp(self, tol=0.02):
         # assumes working directory is diamond/
-        folder = 'diamond/integration_tests/clogistic'
+        folder = os.path.join('diamond', 'integration_tests', 'clogistic')
         simulated_data_loc = os.path.join(folder, 'simulated_clogistic_df.csv')
         estimated_covariance_loc = os.path.join(folder, 'simulated_clogistic_covariance.csv')
         resources_exist = os.path.exists(simulated_data_loc) and \

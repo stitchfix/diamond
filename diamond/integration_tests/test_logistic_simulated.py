@@ -11,7 +11,7 @@ LOGGER.setLevel(logging.INFO)
 
 
 class TestLogistic(unittest.TestCase):
-    def test_setUp(self, tol=0.02):
+    def setUp(self, tol=0.02):
         # assumes working directory is diamond/
         folder = os.path.join('diamond', 'integration_tests', 'logistic')
         data_loc = 'simulated_logistic_df.csv'
@@ -24,7 +24,7 @@ class TestLogistic(unittest.TestCase):
         if not resources_exist:
             logging.info('Simulating data and estimating covariances in R')
             run_r_script(os.path.join(folder, 'logistic_generate_and_fit.R'))
-        logging.info("Reading in training data and R::lme4-estimated covariance matrix")
+        logging.info('Reading in training data and R::lme4-estimated covariance matrix')
         df_train = pd.read_csv(simulated_data_loc)
         df_estimated_covariance = pd.read_csv(estimated_covariance_loc)
 
